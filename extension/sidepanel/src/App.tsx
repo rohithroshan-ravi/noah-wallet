@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { ethers } from "ethers";
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useWalletStore } from "./store/walletStore";
 
 import { WelcomePage } from "./pages/WelcomePage";
@@ -14,78 +16,133 @@ import { ActivityTab, ActivityDetailPage, type TxRecord } from "./pages/Activity
 import { SettingsTab } from "./pages/SettingsTab";
 import { BottomNav, type Tab } from "./components/BottomNav";
 
-type Screen =
-  | "welcome"
-  | "enter-phrase"
-  | "show-phrase"
-  | "set-password-create"
-  | "set-password-import"
-  | "unlock"
-  | "dashboard"
-  | "receive"
-  | "send"
-  | "swap"
-  | "activity-detail";
-
 function DashboardShell() {
-  const [tab, setTab] = useState<Tab>("balance");
-  const [screen, setScreen] = useState<Screen>("dashboard");
-  const [detailTx, setDetailTx] = useState<TxRecord | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  if (screen === "receive") return <ReceivePage onBack={() => setScreen("dashboard")} />;
-  if (screen === "send") return <SendPage onBack={() => setScreen("dashboard")} />;
-  if (screen === "swap") return <SwapTab onBack={() => setScreen("dashboard")} />;
-  if (screen === "activity-detail" && detailTx)
-    return <ActivityDetailPage tx={detailTx} onBack={() => setScreen("dashboard")} />;
+  const tab: Tab = location.pathname.startsWith("/dashboard/swap")
+    ? "swap"
+    : location.pathname.startsWith("/dashboard/activity")
+      ? "activity"
+      : location.pathname.startsWith("/dashboard/settings")
+        ? "settings"
+        : "balance";
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Tab content */}
       <div className="flex-1 overflow-y-auto">
-        {tab === "balance" && (
-          <BalanceTab
-            onReceive={() => setScreen("receive")}
-            onSend={() => setScreen("send")}
-            onSwap={() => setScreen("swap")}
+        <Routes>
+          <Route
+            path="balance"
+            element={
+              <BalanceTab
+                onReceive={() => navigate("/dashboard/receive")}
+                onSend={() => navigate("/dashboard/send")}
+                onSwap={() => navigate("/dashboard/swap")}
+              />
+            }
           />
-        )}
-        {tab === "swap" && <SwapTab onBack={() => setTab("balance")} />}
-        {tab === "activity" && (
-          <ActivityTab
-            onDetail={(tx) => {
-              setDetailTx(tx);
-              setScreen("activity-detail");
-            }}
+          <Route
+            path="receive"
+            element={<ReceivePage onBack={() => navigate("/dashboard/balance")} />}
           />
-        )}
-        {tab === "settings" && (
-          <SettingsTab onLock={() => { /* handled in store */ }} />
-        )}
+          <Route
+            path="send"
+            element={<SendPage onBack={() => navigate("/dashboard/balance")} />}
+          />
+          <Route
+            path="swap"
+            element={<SwapTab onBack={() => navigate("/dashboard/balance")} />}
+          />
+          <Route
+            path="activity"
+            element={
+              <ActivityTab
+                onDetail={(tx) => navigate(`/dashboard/activity/${tx.hash}`)}
+              />
+            }
+          />
+          <Route
+            path="activity/:hash"
+            element={<ActivityDetailRoute />}
+          />
+          <Route
+            path="settings"
+            element={<SettingsTab onLock={() => navigate("/unlock")} />}
+          />
+          <Route path="*" element={<Navigate to="/dashboard/balance" replace />} />
+        </Routes>
       </div>
 
-      {/* Bottom nav */}
-      <BottomNav active={tab} onChange={setTab} />
+      <BottomNav
+        active={tab}
+        onChange={(nextTab) => {
+          const nextPath = nextTab === "balance"
+            ? "/dashboard/balance"
+            : nextTab === "swap"
+              ? "/dashboard/swap"
+              : nextTab === "activity"
+                ? "/dashboard/activity"
+                : "/dashboard/settings";
+          navigate(nextPath);
+        }}
+      />
     </div>
   );
 }
 
+function ActivityDetailRoute() {
+  const { hash } = useParams();
+  const navigate = useNavigate();
+  const txHistory = useWalletStore((s) => s.txHistory);
+  const tx = txHistory.find((item) => item.hash === hash) as TxRecord | undefined;
+
+  if (!tx) {
+    return <Navigate to="/dashboard/activity" replace />;
+  }
+
+  return <ActivityDetailPage tx={tx} onBack={() => navigate("/dashboard/activity")} />;
+}
+
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const init = useWalletStore((s) => s.init);
   const initialized = useWalletStore((s) => s.initialized);
   const wallet = useWalletStore((s) => s.wallet);
   const unlocked = useWalletStore((s) => s.unlocked);
   const generatedMnemonic = useWalletStore((s) => s.pendingSecret);
+  const setPendingSecret = useWalletStore((s) => s.setPendingSecret);
 
-  const [screen, setScreen] = useState<Screen>("welcome");
-
-  useEffect(() => { init(); }, [init]);
+  useEffect(() => {
+    void init();
+  }, [init]);
 
   useEffect(() => {
     if (!initialized) return;
-    if (!wallet) { setScreen("welcome"); return; }
-    if (!unlocked) { setScreen("unlock"); return; }
-    setScreen("dashboard");
-  }, [initialized, wallet, unlocked]);
+
+    const path = location.pathname;
+    const onboardingPath =
+      path === "/welcome" ||
+      path === "/import/recovery" ||
+      path === "/onboarding/recovery" ||
+      path === "/onboarding/password" ||
+      path === "/import/password";
+
+    if (!wallet && !onboardingPath) {
+      navigate("/welcome", { replace: true });
+      return;
+    }
+
+    if (wallet && !unlocked && path !== "/unlock") {
+      navigate("/unlock", { replace: true });
+      return;
+    }
+
+    if (wallet && unlocked && (path === "/" || path === "/unlock" || path === "/welcome" || path === "/dashboard")) {
+      navigate("/dashboard/balance", { replace: true });
+    }
+  }, [initialized, wallet, unlocked, location.pathname, navigate]);
 
   if (!initialized) {
     return (
@@ -95,54 +152,64 @@ export default function App() {
     );
   }
 
-  if (screen === "welcome")
-    return (
-      <WelcomePage
-        onGetStarted={() => setScreen("show-phrase")}
-        onUseExisting={() => setScreen("enter-phrase")}
+  return (
+    <Routes>
+      <Route
+        path="/welcome"
+        element={
+          <WelcomePage
+            onGetStarted={() => {
+              const mnemonic = ethers.Wallet.createRandom().mnemonic?.phrase ?? "";
+              setPendingSecret(mnemonic);
+              navigate("/onboarding/recovery");
+            }}
+            onUseExisting={() => navigate("/import/recovery")}
+          />
+        }
       />
-    );
-
-  if (screen === "enter-phrase")
-    return (
-      <EnterPhrasePage
-        onBack={() => setScreen("welcome")}
-        onContinue={() => setScreen("set-password-import")}
+      <Route
+        path="/import/recovery"
+        element={
+          <EnterPhrasePage
+            onBack={() => navigate("/welcome")}
+            onContinue={() => navigate("/import/password")}
+          />
+        }
       />
-    );
-
-  if (screen === "show-phrase") {
-    // If we don't yet have a generated mnemonic, we need to trigger wallet creation flow
-    // ShowPhrasePage will display the mnemonic from the store's pendingSecret (set after createWallet)
-    return (
-      <ShowPhrasePage
-        mnemonic={generatedMnemonic || "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"}
-        onBack={() => setScreen("welcome")}
-        onContinue={() => setScreen("set-password-create")}
+      <Route
+        path="/onboarding/recovery"
+        element={
+          <ShowPhrasePage
+            mnemonic={generatedMnemonic}
+            onBack={() => navigate("/welcome")}
+            onContinue={() => navigate("/onboarding/password")}
+            onUseExisting={() => navigate("/import/recovery")}
+          />
+        }
       />
-    );
-  }
-
-  if (screen === "set-password-create")
-    return (
-      <SetPasswordPage
-        mode="create"
-        onBack={() => setScreen("show-phrase")}
-        onDone={() => setScreen("dashboard")}
+      <Route
+        path="/onboarding/password"
+        element={
+          <SetPasswordPage
+            mode="create"
+            onBack={() => navigate("/onboarding/recovery")}
+            onDone={() => navigate("/dashboard/balance")}
+          />
+        }
       />
-    );
-
-  if (screen === "set-password-import")
-    return (
-      <SetPasswordPage
-        mode="import-phrase"
-        onBack={() => setScreen("enter-phrase")}
-        onDone={() => setScreen("dashboard")}
+      <Route
+        path="/import/password"
+        element={
+          <SetPasswordPage
+            mode="import-phrase"
+            onBack={() => navigate("/import/recovery")}
+            onDone={() => navigate("/dashboard/balance")}
+          />
+        }
       />
-    );
-
-  if (screen === "unlock")
-    return <UnlockPage onUnlocked={() => setScreen("dashboard")} />;
-
-  return <DashboardShell />;
+      <Route path="/unlock" element={<UnlockPage onUnlocked={() => navigate("/dashboard/balance")} />} />
+      <Route path="/dashboard/*" element={<DashboardShell />} />
+      <Route path="*" element={<Navigate to="/welcome" replace />} />
+    </Routes>
+  );
 }

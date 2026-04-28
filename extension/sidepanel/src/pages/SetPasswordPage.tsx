@@ -29,7 +29,7 @@ export function SetPasswordPage({ mode, onBack, onDone }: Props) {
     if (mode === "create") await createWallet(pw);
     else if (mode === "import-phrase") await importWithMnemonic(pendingSecret, pw);
     else await importWithPrivateKey(pendingSecret, pw);
-    if (!error) onDone();
+    if (!useWalletStore.getState().error) onDone();
   };
 
   return (
