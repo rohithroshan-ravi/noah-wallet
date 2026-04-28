@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design tokens ────────────────────────────────────────────────── */
+:root {
+  --bg:          #0d0d0d;
+  --surface:     #141414;
+  --card:        #1c1c1c;
+  --card2:       #222222;
+  --border:      #2a2a2a;
+  --accent:      #c8ff00;
+  --accent-dim:  #9ecc00;
+  --text-1:      #ffffff;
+  --text-2:      #888888;
+  --text-3:      #555555;
+  --danger:      #ff4d4d;
+  --positive:    #4ade80;
+}
+
+/* ─── Base ──────────────────────────────────────────────────────────── */
+html, body, #root {
+  width: 400px;
+  min-height: 100vh;
+  margin: 0;
+  font-family: "Inter", ui-sans-serif, system-ui;
+  background-color: var(--bg);
+  color: var(--text-1);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────── */
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+*::-webkit-scrollbar { width: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* ─── Utilities ─────────────────────────────────────────────────────── */
+@layer components {
+
+  /* card */
+  .card {
+    @apply rounded-2xl bg-[#1c1c1c] border border-[#2a2a2a];
+  }
+
+  /* inputs */
+  .field {
+    @apply w-full rounded-xl border border-[#2a2a2a] bg-[#1c1c1c] px-4 py-3
+           text-sm text-white placeholder-[#555] outline-none
+           focus:border-[#c8ff00] transition-colors;
+  }
+
+  /* primary lime button */
+  .btn-lime {
+    @apply w-full rounded-full bg-[#c8ff00] py-3.5 text-sm font-bold
+           text-black tracking-wide transition hover:bg-[#9ecc00] active:scale-95
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  /* ghost/text button */
+  .btn-ghost {
+    @apply w-full py-3 text-sm text-[#888] transition hover:text-white;
+  }
+
+  /* icon action button (Receive, Buy, Send, More) */
+  .icon-btn {
+    @apply flex flex-col items-center gap-1;
+  }
+  .icon-btn .icon-circle {
+    @apply flex h-11 w-11 items-center justify-center rounded-full bg-[#1c1c1c]
+           border border-[#2a2a2a] transition hover:border-[#c8ff00];
+  }
+  .icon-btn span {
+    @apply text-[11px] text-[#888];
+  }
+
+  /* bottom tab bar item */
+  .tab-item {
+    @apply flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]
+           text-[#555] transition hover:text-[#c8ff00];
+  }
+  .tab-item.active {
+    @apply text-[#c8ff00];
+  }
+
+  /* pill badge */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold;
+  }
+  .badge-positive { @apply badge bg-[#4ade8020] text-[#4ade80]; }
+  .badge-negative { @apply badge bg-[#ff4d4d20] text-[#ff4d4d]; }
+  .badge-neutral  { @apply badge bg-[#88888820] text-[#888]; }
+
+  /* divider */
+  .divider { @apply border-t border-[#2a2a2a]; }
+
+  /* word chip (seed phrase) */
+  .word-chip {
+    @apply flex items-center gap-1.5 rounded-xl border border-[#2a2a2a]
+           bg-[#1c1c1c] px-3 py-2 text-xs text-white;
+  }
+  .word-chip .idx { @apply text-[10px] text-[#555] w-4 shrink-0; }
+}
