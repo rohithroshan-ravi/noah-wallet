@@ -7,9 +7,10 @@ const GRID = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 type Props = {
   onBack: () => void;
   onContinue: () => void;
+  onImportPrivateKey: () => void;
 };
 
-export function EnterPhrasePage({ onBack, onContinue }: Props) {
+export function EnterPhrasePage({ onBack, onContinue, onImportPrivateKey }: Props) {
   const setPendingSecret = useWalletStore((s) => s.setPendingSecret);
   const [words, setWords] = useState<string[]>(Array(12).fill(""));
   const [len, setLen] = useState<12 | 24>(12);
@@ -95,6 +96,9 @@ export function EnterPhrasePage({ onBack, onContinue }: Props) {
       <div className="mt-auto pb-10 pt-6">
         <button className="btn-lime" disabled={!ready} onClick={handleContinue}>
           Continue
+        </button>
+        <button className="btn-ghost mt-2" onClick={onImportPrivateKey}>
+          Import Private Key Instead
         </button>
         <button className="btn-ghost mt-2" onClick={onBack}>
           Create New Wallet

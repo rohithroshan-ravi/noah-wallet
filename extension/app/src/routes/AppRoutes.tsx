@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { EnterPhrasePage } from "../pages/EnterPhrasePage";
+import { ImportPrivateKeyPage } from "../pages/ImportPrivateKeyPage";
 import { SetPasswordPage } from "../pages/SetPasswordPage";
 import { ShowPhrasePage } from "../pages/ShowPhrasePage";
 import { UnlockPage } from "../pages/UnlockPage";
@@ -37,6 +38,16 @@ export function AppRoutes({ generatedMnemonic, setPendingSecret }: Props) {
           <EnterPhrasePage
             onBack={() => navigate(ROUTES.welcome)}
             onContinue={() => navigate(ROUTES.importPassword)}
+            onImportPrivateKey={() => navigate(ROUTES.importPrivateKey)}
+          />
+        }
+      />
+      <Route
+        path={ROUTES.importPrivateKey}
+        element={
+          <ImportPrivateKeyPage
+            onBack={() => navigate(ROUTES.importRecovery)}
+            onContinue={() => navigate(ROUTES.importPrivateKeyPassword)}
           />
         }
       />
@@ -67,6 +78,16 @@ export function AppRoutes({ generatedMnemonic, setPendingSecret }: Props) {
           <SetPasswordPage
             mode="import-phrase"
             onBack={() => navigate(ROUTES.importRecovery)}
+            onDone={() => navigate(ROUTES.dashboardBalance)}
+          />
+        }
+      />
+      <Route
+        path={ROUTES.importPrivateKeyPassword}
+        element={
+          <SetPasswordPage
+            mode="import-pk"
+            onBack={() => navigate(ROUTES.importPrivateKey)}
             onDone={() => navigate(ROUTES.dashboardBalance)}
           />
         }
