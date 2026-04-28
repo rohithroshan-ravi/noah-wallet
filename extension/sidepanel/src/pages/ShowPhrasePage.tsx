@@ -6,10 +6,11 @@ type Props = {
   mnemonic: string;
   onContinue: () => void;
   onBack: () => void;
+  onUseExisting: () => void;
 };
 
-export function ShowPhrasePage({ mnemonic, onContinue, onBack }: Props) {
-  const words = mnemonic.split(" ");
+export function ShowPhrasePage({ mnemonic, onContinue, onBack, onUseExisting }: Props) {
+  const words = mnemonic.trim().split(/\s+/).filter(Boolean);
   const [saved, setSaved] = useState(false);
 
   return (
@@ -52,7 +53,7 @@ export function ShowPhrasePage({ mnemonic, onContinue, onBack }: Props) {
         >
           Saved Phrase
         </button>
-        <button className="btn-ghost" onClick={onContinue}>
+        <button className="btn-ghost" onClick={onUseExisting}>
           Use Existing Wallet
         </button>
       </div>
