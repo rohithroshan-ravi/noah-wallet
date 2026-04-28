@@ -13,7 +13,7 @@ const TABS: { id: Tab; label: string; Icon: React.ComponentType<{ size?: number 
 
 export function BottomNav({ active, onChange }: Props) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 flex h-16 border-t border-[#1c1c1c] bg-[#0d0d0d]">
+    <nav className="flex h-16 border-t border-[#1c1c1c] bg-[#0d0d0d]">
       {TABS.map(({ id, label, Icon }) => (
         <button
           key={id}
