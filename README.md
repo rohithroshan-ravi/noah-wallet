@@ -1,12 +1,12 @@
 # Noah Wallet (MetaMask Lite)
 
-Production-style EVM wallet browser extension + backend API.
+Production-ready EVM wallet Chrome extension using a side panel UI.
 
 ## Stack
 
-- Frontend extension: React + TypeScript + Vite + TailwindCSS + Zustand + ethers
-- Backend API: Node.js + Express + MongoDB + Moralis + JWT
-- Auth: Sign-In with Ethereum (SIWE)
+- Extension frontend: React + TypeScript + Vite + TailwindCSS + Zustand + ethers
+- Data provider: Moralis Web3 Data API (direct REST from extension)
+- Surface: Chrome Extension Manifest V3 side panel
 
 ## Project Structure
 
@@ -18,13 +18,14 @@ extension/
   vite.config.ts
   postcss.config.cjs
   tailwind.config.ts
+  .env.example
   src/
     background.ts
     content.ts
     inpage.ts
     shared/
       networks.ts
-  popup/
+  sidepanel/
     index.html
     src/
       App.tsx
@@ -32,13 +33,7 @@ extension/
       index.css
       types.ts
       components/
-        AuthGate.tsx
-        Dashboard.tsx
-        NetworkSelector.tsx
-        SendForm.tsx
-        RecentTransactions.tsx
-      hooks/
-        useAutoLock.ts
+      pages/
       store/
         walletStore.ts
       utils/
@@ -46,67 +41,36 @@ extension/
         crypto.ts
         evm.ts
         storage.ts
-
-server/
-  .env.example
-  package.json
-  src/
-    index.js
-    app.js
-    config/
-      env.js
-      mongo.js
-      moralis.js
-    models/
-      User.js
-    middleware/
-      auth.js
-    controllers/
-      authController.js
-      walletController.js
-      marketController.js
-    routes/
-      authRoutes.js
-      walletRoutes.js
-      marketRoutes.js
 ```
 
 ## Security Notes
 
-- Private keys are never sent to backend.
-- Private keys are encrypted in extension local storage using AES-GCM + PBKDF2.
-- Wallet is protected by password unlock.
-- Auto-lock inactivity timer clears unlocked key from memory.
-- Backend stores only user metadata (address, preferences, nonce).
+- Private keys are never sent to any backend.
+- Vault data is encrypted in browser storage using AES-GCM + PBKDF2.
+- Wallet unlock uses local password verification.
+- Auto-lock clears unlocked key material from memory.
 
-## Run Backend
-
-```bash
-cd server
-cp .env.example .env
-npm install
-npm run dev
-```
-
-## Run Extension Build
+## Setup
 
 ```bash
 cd extension
 cp .env.example .env
 npm install
+npm run typecheck
 npm run build
 ```
 
-Load extension from: `extension/dist` in Chromium browser extension developer mode.
+Set `VITE_MORALIS_API_KEY` in `.env` before build.
 
-## Core Capabilities Included
+Load the unpacked extension from `extension/dist` in Chrome extension developer mode.
 
-- Create wallet (mnemonic generation)
-- Import wallet (private key / seed phrase)
-- Encrypted vault in browser storage
-- Native and ERC20 balance retrieval (via backend Moralis)
-- Native token sending + gas estimation
-- Transaction history list
-- Networks: Ethereum, Polygon, BSC + custom network support
-- Manifest v3 with background service worker, content script, and inpage provider injection
-- Dark mode + QR code + copy address
+## Core Capabilities
+
+- Create wallet (mnemonic)
+- Import wallet (private key or seed phrase)
+- Encrypted local vault
+- Native and ERC20 balances via Moralis API
+- Native/ERC20 send flows
+- Transaction history
+- Multi-network support with custom network support
+- MV3 background service worker + content/inpage scripts

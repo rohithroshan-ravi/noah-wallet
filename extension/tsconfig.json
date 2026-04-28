@@ -10,5 +10,5 @@
     "jsx": "react-jsx",
     "types": ["chrome", "vite/client"]
   },
-  "include": ["src", "popup", "sidepanel", "vite.config.ts"]
+  "include": ["src", "sidepanel", "vite.config.ts"]
 }
