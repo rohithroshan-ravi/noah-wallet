@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  content: ["./sidepanel/index.html", "./sidepanel/src/**/*.{ts,tsx}"],
+  content: ["./app/index.html", "./app/src/**/*.{ts,tsx}"],
   darkMode: "class",
   theme: {
     extend: {

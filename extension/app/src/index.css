@@ -20,7 +20,7 @@
 
 /* ─── Base ──────────────────────────────────────────────────────────── */
 html, body, #root {
-  width: 400px;
+  width: 100%;
   min-height: 100vh;
   margin: 0;
   font-family: "Inter", ui-sans-serif, system-ui;
@@ -37,6 +37,18 @@ html, body, #root {
 
 /* ─── Utilities ─────────────────────────────────────────────────────── */
 @layer components {
+
+  .panel-shell {
+    @apply flex min-h-screen flex-col bg-[#0d0d0d];
+  }
+
+  .panel-content {
+    @apply flex-1 overflow-y-auto;
+  }
+
+  .panel-footer {
+    @apply sticky bottom-0 z-20 border-t border-[#1c1c1c] bg-[#0d0d0d];
+  }
 
   /* card */
   .card {

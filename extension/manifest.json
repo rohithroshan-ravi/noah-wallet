@@ -7,7 +7,7 @@
     "default_title": "Noah Wallet"
   },
   "side_panel": {
-    "default_path": "sidepanel/index.html"
+    "default_path": "app/index.html"
   },
   "permissions": [
     "storage",
