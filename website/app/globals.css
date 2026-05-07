@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0d0d0d;
+  --surface: #141414;
+  --card: #1c1c1c;
+  --border: #2a2a2a;
+  --accent: #c8ff00;
+  --text-1: #ffffff;
+  --text-2: #888888;
+}
+
+html, body {
+  background-color: var(--bg);
+  color: var(--text-1);
+  font-family: "Inter", ui-sans-serif, system-ui;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+/* Utility classes */
+.btn-primary {
+  @apply px-6 py-3 bg-[#c8ff00] text-black font-bold rounded-full hover:bg-[#9ecc00] transition active:scale-95;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 border border-[#c8ff00] text-[#c8ff00] font-bold rounded-full hover:bg-[#c8ff00]/10 transition;
+}
+
+.btn-ghost {
+  @apply px-6 py-3 text-[#888] hover:text-white transition;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #c8ff00, #9ecc00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
