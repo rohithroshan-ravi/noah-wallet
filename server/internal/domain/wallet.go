@@ -1,7 +1,5 @@
 package domain
 
-import "context"
-
 // ── Asset Holdings ───────────────────────────────────────────────────────────
 
 // Wallet is a locally-stored wallet record.
@@ -136,54 +134,3 @@ type Approval struct {
 	BlockTimestamp string `json:"block_timestamp"`
 }
 
-// ── Repository / Service interfaces ─────────────────────────────────────────
-
-// WalletRepository defines persistence operations.
-type WalletRepository interface {
-	FindByAddress(ctx context.Context, address string) (*Wallet, error)
-	Save(ctx context.Context, wallet *Wallet) error
-}
-
-// MoralisService is the port for all Moralis REST API calls.
-type MoralisService interface {
-	// Asset Holdings
-	GetNativeBalance(ctx context.Context, address, chain string) (*NativeBalance, error)
-	GetTokenBalances(ctx context.Context, address, chain string) ([]Token, error)
-	GetNFTs(ctx context.Context, address, chain string) ([]NFT, error)
-	// Transaction History
-	GetWalletHistory(ctx context.Context, address, chain string) ([]HistoryEntry, error)
-	GetTransactions(ctx context.Context, address, chain string) ([]Transaction, error)
-	// DeFi
-	GetDeFiPositions(ctx context.Context, address, chain string) ([]DeFiPosition, error)
-	// Financial Metrics
-	GetNetWorth(ctx context.Context, address string, chains []string) (*NetWorth, error)
-	GetPnLSummary(ctx context.Context, address, chain string, days int) (*PnLSummary, error)
-	GetPnLBreakdown(ctx context.Context, address, chain string, days int) ([]TokenPnL, error)
-	// Identity
-	ResolveENS(ctx context.Context, address string) (*ENSInfo, error)
-	// Approvals
-	GetApprovals(ctx context.Context, address, chain string) ([]Approval, error)
-}
-
-// ── Usecase interfaces ───────────────────────────────────────────────────────
-
-// WalletUsecase defines wallet CRUD operations.
-type WalletUsecase interface {
-	GetWallet(ctx context.Context, address string) (*Wallet, error)
-	CreateWallet(ctx context.Context, wallet *Wallet) error
-}
-
-// PortfolioUsecase defines all on-chain portfolio read operations.
-type PortfolioUsecase interface {
-	GetNativeBalance(ctx context.Context, address, chain string) (*NativeBalance, error)
-	GetTokenBalances(ctx context.Context, address, chain string) ([]Token, error)
-	GetNFTs(ctx context.Context, address, chain string) ([]NFT, error)
-	GetWalletHistory(ctx context.Context, address, chain string) ([]HistoryEntry, error)
-	GetTransactions(ctx context.Context, address, chain string) ([]Transaction, error)
-	GetDeFiPositions(ctx context.Context, address, chain string) ([]DeFiPosition, error)
-	GetNetWorth(ctx context.Context, address string, chains []string) (*NetWorth, error)
-	GetPnLSummary(ctx context.Context, address, chain string, days int) (*PnLSummary, error)
-	GetPnLBreakdown(ctx context.Context, address, chain string, days int) ([]TokenPnL, error)
-	ResolveENS(ctx context.Context, address string) (*ENSInfo, error)
-	GetApprovals(ctx context.Context, address, chain string) ([]Approval, error)
-}

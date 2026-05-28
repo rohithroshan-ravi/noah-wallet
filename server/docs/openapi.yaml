@@ -1,0 +1,870 @@
+openapi: 3.0.3
+info:
+  title: Noah Wallet API
+  version: 1.0.0
+  description: Backend API for the Noah Wallet browser extension. All `/api/v1` routes require an `X-API-Key` header.
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  parameters:
+    address:
+      name: address
+      in: path
+      required: true
+      schema:
+        type: string
+        example: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+    chain:
+      name: chain
+      in: query
+      required: false
+      description: Moralis chain identifier. Defaults to `eth`.
+      schema:
+        type: string
+        enum: [eth, polygon, bsc, optimism, arbitrum, base, avalanche]
+        default: eth
+    days:
+      name: days
+      in: query
+      required: false
+      description: Lookback window in days. 0 means all time.
+      schema:
+        type: integer
+        default: 0
+
+  schemas:
+    # ── Envelope ──────────────────────────────────────────────────────────────
+    SuccessEnvelope:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          description: Response payload (varies by endpoint).
+
+    ErrorEnvelope:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "wallet not found"
+
+    # ── Wallet ────────────────────────────────────────────────────────────────
+    Wallet:
+      type: object
+      properties:
+        address:
+          type: string
+          example: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+        network:
+          type: string
+          example: "eth"
+
+    # ── Portfolio ─────────────────────────────────────────────────────────────
+    NativeBalance:
+      type: object
+      properties:
+        balance:
+          type: string
+          description: Raw wei balance as a decimal string.
+          example: "1500000000000000000"
+
+    Token:
+      type: object
+      properties:
+        token_address:
+          type: string
+          example: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        symbol:
+          type: string
+          example: "USDC"
+        name:
+          type: string
+          example: "USD Coin"
+        decimals:
+          type: string
+          example: "6"
+        balance:
+          type: string
+          example: "1000000"
+        balance_formatted:
+          type: string
+          example: "1.000000"
+        usd_price:
+          type: string
+          example: "1.0001"
+        usd_value:
+          type: string
+          example: "1.0001"
+        logo:
+          type: string
+          example: "https://..."
+        possible_spam:
+          type: boolean
+          example: false
+
+    NFT:
+      type: object
+      properties:
+        token_address:
+          type: string
+        token_id:
+          type: string
+        name:
+          type: string
+        symbol:
+          type: string
+        token_uri:
+          type: string
+        metadata:
+          type: string
+        amount:
+          type: string
+        contract_type:
+          type: string
+          example: "ERC721"
+
+    Transaction:
+      type: object
+      properties:
+        hash:
+          type: string
+        from_address:
+          type: string
+        to_address:
+          type: string
+        value:
+          type: string
+        block_number:
+          type: string
+        block_timestamp:
+          type: string
+          format: date-time
+        gas:
+          type: string
+        gas_price:
+          type: string
+        transaction_fee:
+          type: string
+
+    HistoryEntry:
+      type: object
+      properties:
+        hash:
+          type: string
+        category:
+          type: string
+          example: "token transfer"
+        summary:
+          type: string
+          example: "Sent 100 USDC to 0xabc…"
+        block_timestamp:
+          type: string
+          format: date-time
+        block_number:
+          type: string
+        transaction_fee:
+          type: string
+        from_address:
+          type: string
+        to_address:
+          type: string
+
+    DeFiPosition:
+      type: object
+      properties:
+        protocol_id:
+          type: string
+        protocol_name:
+          type: string
+        protocol_logo:
+          type: string
+        chain:
+          type: string
+        position:
+          type: object
+          additionalProperties: true
+
+    NetWorth:
+      type: object
+      properties:
+        total_networth_usd:
+          type: string
+          example: "4250.67"
+        chains:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChainWorth"
+
+    ChainWorth:
+      type: object
+      properties:
+        chain:
+          type: string
+          example: "eth"
+        networth_usd:
+          type: string
+          example: "3100.00"
+
+    PnLSummary:
+      type: object
+      properties:
+        total_realized_profit_usd:
+          type: string
+        total_unrealised_profit_usd:
+          type: string
+        total_count_of_trades:
+          type: integer
+        total_count_of_winning_trades:
+          type: integer
+        total_count_of_losing_trades:
+          type: integer
+
+    TokenPnL:
+      type: object
+      properties:
+        token_address:
+          type: string
+        token_symbol:
+          type: string
+        token_name:
+          type: string
+        realized_profit_usd:
+          type: string
+        unrealised_profit_usd:
+          type: string
+        count_of_trades:
+          type: integer
+        avg_buy_price_usd:
+          type: string
+        avg_sell_price_usd:
+          type: string
+
+    ENSInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "vitalik.eth"
+        address:
+          type: string
+
+    Approval:
+      type: object
+      properties:
+        token_address:
+          type: string
+        token_symbol:
+          type: string
+        token_name:
+          type: string
+        spender:
+          type: string
+        spender_label:
+          type: string
+        value:
+          type: string
+        value_formatted:
+          type: string
+        block_timestamp:
+          type: string
+          format: date-time
+
+    # ── Swap (LI.FI) ─────────────────────────────────────────────────────────
+    LifiChain:
+      type: object
+      properties:
+        key:
+          type: string
+          example: "eth"
+        name:
+          type: string
+          example: "Ethereum"
+        id:
+          type: integer
+          example: 1
+        coin:
+          type: string
+          example: "ETH"
+        chainType:
+          type: string
+          example: "EVM"
+        mainnet:
+          type: boolean
+        logoURI:
+          type: string
+        nativeToken:
+          $ref: "#/components/schemas/LifiToken"
+        metamask:
+          type: object
+          properties:
+            chainId:
+              type: string
+              example: "0x1"
+            chainName:
+              type: string
+            rpcUrls:
+              type: array
+              items:
+                type: string
+            blockExplorerUrls:
+              type: array
+              items:
+                type: string
+
+    LifiToken:
+      type: object
+      properties:
+        address:
+          type: string
+          example: "0x0000000000000000000000000000000000000000"
+        symbol:
+          type: string
+          example: "ETH"
+        name:
+          type: string
+          example: "Ether"
+        decimals:
+          type: integer
+          example: 18
+        chainId:
+          type: integer
+          example: 1
+        logoURI:
+          type: string
+        priceUSD:
+          type: string
+          example: "3200.00"
+
+    LifiGasCost:
+      type: object
+      properties:
+        amount:
+          type: string
+        amountUSD:
+          type: string
+        token:
+          $ref: "#/components/schemas/LifiToken"
+
+    LifiQuote:
+      type: object
+      properties:
+        transactionRequest:
+          type: object
+          properties:
+            from:
+              type: string
+            to:
+              type: string
+            data:
+              type: string
+            value:
+              type: string
+            gasPrice:
+              type: string
+            gasLimit:
+              type: string
+            chainId:
+              type: integer
+        estimate:
+          type: object
+          properties:
+            fromAmount:
+              type: string
+            toAmount:
+              type: string
+            toAmountMin:
+              type: string
+            gasCosts:
+              type: array
+              items:
+                $ref: "#/components/schemas/LifiGasCost"
+            executionDuration:
+              type: number
+              example: 30
+            fromAmountUSD:
+              type: string
+            toAmountUSD:
+              type: string
+        action:
+          type: object
+          properties:
+            fromToken:
+              $ref: "#/components/schemas/LifiToken"
+            toToken:
+              $ref: "#/components/schemas/LifiToken"
+            fromAmount:
+              type: string
+            slippage:
+              type: number
+            fromChainId:
+              type: integer
+            toChainId:
+              type: integer
+
+paths:
+  # ── Health ──────────────────────────────────────────────────────────────────
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      security: []
+      tags: [System]
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessEnvelope"
+
+  # ── Wallets ─────────────────────────────────────────────────────────────────
+  /api/v1/wallets/{address}:
+    get:
+      summary: Get a stored wallet
+      operationId: getWallet
+      tags: [Wallets]
+      parameters:
+        - $ref: "#/components/parameters/address"
+      responses:
+        "200":
+          description: Wallet found
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Wallet"
+        "404":
+          description: Wallet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  # ── Portfolio ────────────────────────────────────────────────────────────────
+  /api/v1/wallets/{address}/balance:
+    get:
+      summary: Get native token balance
+      operationId: getNativeBalance
+      tags: [Portfolio]
+      parameters:
+        - $ref: "#/components/parameters/address"
+        - $ref: "#/components/parameters/chain"
+      responses:
+        "200":
+          description: Native balance in wei
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/NativeBalance"
+
+  /api/v1/wallets/{address}/tokens:
+    get:
+      summary: Get ERC-20 token balances
+      operationId: getTokenBalances
+      tags: [Portfolio]
+      parameters:
+        - $ref: "#/components/parameters/address"
+        - $ref: "#/components/parameters/chain"
+      responses:
+        "200":
+          description: List of ERC-20 token balances
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Token"
+
+  /api/v1/wallets/{address}/nfts:
+    get:
+      summary: Get NFT holdings
+      operationId: getNFTs
+      tags: [Portfolio]
+      parameters:
+        - $ref: "#/components/parameters/address"
+        - $ref: "#/components/parameters/chain"
+      responses:
+        "200":
+          description: List of NFTs
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/NFT"
+
+  /api/v1/wallets/{address}/history:
+    get:
+      summary: Get decoded wallet activity history
+      operationId: getWalletHistory
+      tags: [Transactions]
+      parameters:
+        - $ref: "#/components/parameters/address"
+        - $ref: "#/components/parameters/chain"
+      responses:
+        "200":
+          description: Decoded activity entries
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/HistoryEntry"
+
+  /api/v1/wallets/{address}/transactions:
+    get:
+      summary: Get raw on-chain transactions
+      operationId: getTransactions
+      tags: [Transactions]
+      parameters:
+        - $ref: "#/components/parameters/address"
+        - $ref: "#/components/parameters/chain"
+      responses:
+        "200":
+          description: Raw transaction list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Transaction"
+
+  /api/v1/wallets/{address}/defi:
+    get:
+      summary: Get DeFi protocol positions
+      operationId: getDeFiPositions
+      tags: [Portfolio]
+      parameters:
+        - $ref: "#/components/parameters/address"
+        - $ref: "#/components/parameters/chain"
+      responses:
+        "200":
+          description: List of DeFi positions
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/DeFiPosition"
+
+  /api/v1/wallets/{address}/net-worth:
+    get:
+      summary: Get total net worth across chains
+      operationId: getNetWorth
+      tags: [Portfolio]
+      parameters:
+        - $ref: "#/components/parameters/address"
+        - name: "chains[]"
+          in: query
+          required: false
+          description: One or more chain identifiers. Defaults to `[eth]`.
+          schema:
+            type: array
+            items:
+              type: string
+            default: [eth]
+          style: form
+          explode: true
+      responses:
+        "200":
+          description: Aggregated net worth
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/NetWorth"
+
+  /api/v1/wallets/{address}/pnl:
+    get:
+      summary: Get P&L summary
+      operationId: getPnLSummary
+      tags: [Analytics]
+      parameters:
+        - $ref: "#/components/parameters/address"
+        - $ref: "#/components/parameters/chain"
+        - $ref: "#/components/parameters/days"
+      responses:
+        "200":
+          description: P&L summary
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PnLSummary"
+
+  /api/v1/wallets/{address}/pnl/breakdown:
+    get:
+      summary: Get per-token P&L breakdown
+      operationId: getPnLBreakdown
+      tags: [Analytics]
+      parameters:
+        - $ref: "#/components/parameters/address"
+        - $ref: "#/components/parameters/chain"
+        - $ref: "#/components/parameters/days"
+      responses:
+        "200":
+          description: Per-token P&L list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TokenPnL"
+
+  /api/v1/wallets/{address}/ens:
+    get:
+      summary: Resolve ENS name for an address
+      operationId: resolveENS
+      tags: [Identity]
+      parameters:
+        - $ref: "#/components/parameters/address"
+      responses:
+        "200":
+          description: Resolved ENS info
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ENSInfo"
+
+  /api/v1/wallets/{address}/approvals:
+    get:
+      summary: Get active ERC-20 token approvals
+      operationId: getApprovals
+      tags: [Portfolio]
+      parameters:
+        - $ref: "#/components/parameters/address"
+        - $ref: "#/components/parameters/chain"
+      responses:
+        "200":
+          description: List of active approvals
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Approval"
+
+  # ── Swap (LI.FI) ─────────────────────────────────────────────────────────────
+  /api/v1/swap/chains:
+    get:
+      summary: List supported EVM chains for swapping
+      operationId: getSwapChains
+      tags: [Swap]
+      responses:
+        "200":
+          description: List of EVM chains from LI.FI
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/LifiChain"
+
+  /api/v1/swap/tokens:
+    get:
+      summary: List tokens available for swapping on a chain
+      operationId: getSwapTokens
+      tags: [Swap]
+      parameters:
+        - name: chainId
+          in: query
+          required: true
+          description: Numeric EVM chain ID.
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: List of tokens on the given chain
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/LifiToken"
+        "400":
+          description: Missing or invalid chainId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /api/v1/swap/quote:
+    get:
+      summary: Get a swap/bridge quote
+      operationId: getSwapQuote
+      tags: [Swap]
+      parameters:
+        - name: fromChain
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 1
+        - name: toChain
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 137
+        - name: fromToken
+          in: query
+          required: true
+          description: Token contract address on the source chain.
+          schema:
+            type: string
+            example: "0x0000000000000000000000000000000000000000"
+        - name: toToken
+          in: query
+          required: true
+          description: Token contract address on the destination chain.
+          schema:
+            type: string
+            example: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174"
+        - name: fromAmount
+          in: query
+          required: true
+          description: Amount in smallest unit (wei).
+          schema:
+            type: string
+            example: "1000000000000000000"
+        - name: fromAddress
+          in: query
+          required: true
+          description: Sender wallet address.
+          schema:
+            type: string
+            example: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+        - name: slippage
+          in: query
+          required: false
+          description: Max allowed slippage as a decimal (e.g. 0.005 = 0.5%). Defaults to 0.005.
+          schema:
+            type: number
+            default: 0.005
+      responses:
+        "200":
+          description: Swap quote with ready-to-sign transaction
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LifiQuote"
+        "400":
+          description: Missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: LI.FI returned no route or upstream error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+tags:
+  - name: System
+    description: Health and status
+  - name: Wallets
+    description: Wallet registry (local storage)
+  - name: Portfolio
+    description: On-chain asset holdings via Moralis
+  - name: Transactions
+    description: On-chain transaction history via Moralis
+  - name: Analytics
+    description: P&L and net-worth metrics via Moralis
+  - name: Identity
+    description: ENS resolution
+  - name: Swap
+    description: Cross-chain swap and bridge via LI.FI

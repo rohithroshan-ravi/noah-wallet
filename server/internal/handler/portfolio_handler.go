@@ -1,24 +1,22 @@
 package handler
 
 import (
-	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/rohithroshan-ravi/noah-wallet/server/internal/domain"
+	"github.com/rohithroshan-ravi/noah-wallet/server/internal/usecase"
 	"github.com/rohithroshan-ravi/noah-wallet/server/pkg/ethutil"
 	"github.com/rohithroshan-ravi/noah-wallet/server/pkg/response"
 )
 
 // PortfolioHandler handles all portfolio-related routes.
 type PortfolioHandler struct {
-	uc domain.PortfolioUsecase
+	uc usecase.PortfolioUsecase
 }
 
-// NewPortfolioHandler creates a PortfolioHandler.
-func NewPortfolioHandler(uc domain.PortfolioUsecase) *PortfolioHandler {
+func NewPortfolioHandler(uc usecase.PortfolioUsecase) *PortfolioHandler {
 	return &PortfolioHandler{uc: uc}
 }
 
@@ -144,7 +142,6 @@ func (h *PortfolioHandler) GetNetWorth(c echo.Context) error {
 	if len(rawChains) == 0 {
 		rawChains = strings.Split(c.QueryParam("chains"), ",")
 	}
-	// Filter empties and validate
 	var chains []string
 	for _, ch := range rawChains {
 		ch = strings.TrimSpace(ch)
@@ -217,6 +214,3 @@ func (h *PortfolioHandler) GetApprovals(c echo.Context) error {
 	}
 	return response.OK(c, data)
 }
-
-// ensure interface satisfied at compile time
-var _ http.Handler

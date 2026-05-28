@@ -1,0 +1,34 @@
+<svg width="64" height="64" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="128" fill="#0d0d0d"/>
+  
+  <!-- Outer ring -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="#c8ff00" stroke-width="2"/>
+  
+  <!-- Wallet icon base -->
+  <g transform="translate(128, 128)">
+    <!-- Main wallet shape -->
+    <rect x="-50" y="-35" width="100" height="70" rx="8" fill="none" stroke="#c8ff00" stroke-width="3"/>
+    
+    <!-- Wallet flap -->
+    <path d="M -50 -35 Q -50 -55 -30 -60 Q 0 -65 30 -60 Q 50 -55 50 -35" fill="none" stroke="#c8ff00" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Coin slots -->
+    <circle cx="-25" cy="0" r="12" fill="none" stroke="#c8ff00" stroke-width="2.5"/>
+    <circle cx="0" cy="8" r="12" fill="none" stroke="#c8ff00" stroke-width="2.5"/>
+    <circle cx="25" cy="0" r="12" fill="none" stroke="#c8ff00" stroke-width="2.5"/>
+    
+    <!-- Accent dot -->
+    <circle cx="-25" cy="0" r="5" fill="#c8ff00"/>
+    
+    <!-- Network nodes -->
+    <circle cx="-60" cy="-25" r="3" fill="#c8ff00"/>
+    <circle cx="60" cy="-25" r="3" fill="#c8ff00"/>
+    <circle cx="-60" cy="25" r="3" fill="#c8ff00"/>
+    <circle cx="60" cy="25" r="3" fill="#c8ff00"/>
+    
+    <!-- Connecting lines (subtle) -->
+    <line x1="-60" y1="-25" x2="-25" y2="0" stroke="#c8ff00" stroke-width="1" opacity="0.5"/>
+    <line x1="60" y1="-25" x2="25" y2="0" stroke="#c8ff00" stroke-width="1" opacity="0.5"/>
+  </g>
+</svg>

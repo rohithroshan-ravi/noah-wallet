@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import type { TokenBalance, TxRecord } from "../types";
+import type { LifiChain, LifiToken, LifiQuote, TokenBalance, TxRecord } from "../types";
 
 const BASE = "https://deep-index.moralis.io/api/v2.2";
 
@@ -96,6 +96,58 @@ const NATIVE_WRAP: Record<string, string> = {
   "0x89": "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
   "0x38": "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
 };
+
+// ─── LI.FI (via backend proxy) ───────────────────────────────────────────────
+
+function apiBase(): string {
+  return (import.meta.env.VITE_API_BASE_URL as string) ?? "http://localhost:8080";
+}
+
+function backendHeaders(): HeadersInit {
+  const key = (import.meta.env.VITE_API_KEY as string) ?? "";
+  return key ? { "X-API-Key": key } : {};
+}
+
+type BackendResponse<T> = { success: boolean; data: T };
+
+async function backendGet<T>(path: string, query?: Record<string, string>): Promise<T | null> {
+  const url = new URL(`${apiBase()}/api/v1${path}`);
+  if (query) Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString(), { headers: backendHeaders() });
+  if (!res.ok) return null;
+  const body = (await res.json()) as BackendResponse<T>;
+  return body.data ?? null;
+}
+
+export async function fetchLifiChains(): Promise<LifiChain[]> {
+  return (await backendGet<LifiChain[]>("/swap/chains")) ?? [];
+}
+
+export async function fetchLifiTokens(chainId: number): Promise<LifiToken[]> {
+  return (await backendGet<LifiToken[]>("/swap/tokens", { chainId: String(chainId) })) ?? [];
+}
+
+export type LifiQuoteParams = {
+  fromChain: number;
+  toChain: number;
+  fromToken: string;
+  toToken: string;
+  fromAmount: string;
+  fromAddress: string;
+  slippage?: number;
+};
+
+export async function fetchLifiQuote(params: LifiQuoteParams): Promise<LifiQuote | null> {
+  return backendGet<LifiQuote>("/swap/quote", {
+    fromChain: String(params.fromChain),
+    toChain: String(params.toChain),
+    fromToken: params.fromToken,
+    toToken: params.toToken,
+    fromAmount: params.fromAmount,
+    fromAddress: params.fromAddress,
+    slippage: String(params.slippage ?? 0.005),
+  });
+}
 
 export async function fetchNativeUsdPrice(chainId: string): Promise<number> {
   const token = NATIVE_WRAP[chainId.toLowerCase()];
