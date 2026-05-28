@@ -6,12 +6,18 @@ import (
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/domain"
 )
 
-type walletUsecase struct {
-	repo domain.WalletRepository
+// WalletUsecase is the inbound port for wallet lookups.
+type WalletUsecase interface {
+	GetWallet(ctx context.Context, address string) (*domain.Wallet, error)
 }
 
-// NewWalletUsecase creates a WalletUsecase backed by the given repository.
-func NewWalletUsecase(repo domain.WalletRepository) domain.WalletUsecase {
+type walletUsecase struct {
+	repo WalletRepository
+}
+
+var _ WalletUsecase = (*walletUsecase)(nil)
+
+func NewWalletUsecase(repo WalletRepository) WalletUsecase {
 	return &walletUsecase{repo: repo}
 }
 
@@ -19,6 +25,3 @@ func (u *walletUsecase) GetWallet(ctx context.Context, address string) (*domain.
 	return u.repo.FindByAddress(ctx, address)
 }
 
-func (u *walletUsecase) CreateWallet(ctx context.Context, wallet *domain.Wallet) error {
-	return u.repo.Save(ctx, wallet)
-}

@@ -2,15 +2,16 @@ package router
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/rohithroshan-ravi/noah-wallet/server/internal/domain"
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/handler"
 	appmw "github.com/rohithroshan-ravi/noah-wallet/server/internal/middleware"
+	"github.com/rohithroshan-ravi/noah-wallet/server/internal/usecase"
 )
 
 // Register wires all routes onto e.
-func Register(e *echo.Echo, walletUC domain.WalletUsecase, portfolioUC domain.PortfolioUsecase, apiKeys []string) {
+func Register(e *echo.Echo, walletUC usecase.WalletUsecase, portfolioUC usecase.PortfolioUsecase, swapUC usecase.SwapUsecase, apiKeys []string) {
 	wh := handler.NewWalletHandler(walletUC)
 	ph := handler.NewPortfolioHandler(portfolioUC)
+	sh := handler.NewSwapHandler(swapUC)
 
 	e.GET("/health", handler.HealthCheck)
 
@@ -21,7 +22,6 @@ func Register(e *echo.Echo, walletUC domain.WalletUsecase, portfolioUC domain.Po
 
 	// Wallet CRUD
 	api.GET("/wallets/:address", wh.GetWallet)
-	api.POST("/wallets", wh.CreateWallet)
 
 	// Asset Holdings
 	api.GET("/wallets/:address/balance", ph.GetNativeBalance)
@@ -45,4 +45,9 @@ func Register(e *echo.Echo, walletUC domain.WalletUsecase, portfolioUC domain.Po
 
 	// Approvals
 	api.GET("/wallets/:address/approvals", ph.GetApprovals)
+
+	// Swap (LI.FI)
+	api.GET("/swap/chains", sh.GetChains)
+	api.GET("/swap/tokens", sh.GetTokens)
+	api.GET("/swap/quote", sh.GetQuote)
 }

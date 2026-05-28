@@ -6,12 +6,28 @@ import (
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/domain"
 )
 
-type portfolioUsecase struct {
-	moralis domain.MoralisService
+// PortfolioUsecase is the inbound port for all on-chain portfolio reads.
+type PortfolioUsecase interface {
+	GetNativeBalance(ctx context.Context, address, chain string) (*domain.NativeBalance, error)
+	GetTokenBalances(ctx context.Context, address, chain string) ([]domain.Token, error)
+	GetNFTs(ctx context.Context, address, chain string) ([]domain.NFT, error)
+	GetWalletHistory(ctx context.Context, address, chain string) ([]domain.HistoryEntry, error)
+	GetTransactions(ctx context.Context, address, chain string) ([]domain.Transaction, error)
+	GetDeFiPositions(ctx context.Context, address, chain string) ([]domain.DeFiPosition, error)
+	GetNetWorth(ctx context.Context, address string, chains []string) (*domain.NetWorth, error)
+	GetPnLSummary(ctx context.Context, address, chain string, days int) (*domain.PnLSummary, error)
+	GetPnLBreakdown(ctx context.Context, address, chain string, days int) ([]domain.TokenPnL, error)
+	ResolveENS(ctx context.Context, address string) (*domain.ENSInfo, error)
+	GetApprovals(ctx context.Context, address, chain string) ([]domain.Approval, error)
 }
 
-// NewPortfolioUsecase creates a PortfolioUsecase backed by MoralisService.
-func NewPortfolioUsecase(svc domain.MoralisService) domain.PortfolioUsecase {
+type portfolioUsecase struct {
+	moralis MoralisService
+}
+
+var _ PortfolioUsecase = (*portfolioUsecase)(nil)
+
+func NewPortfolioUsecase(svc MoralisService) PortfolioUsecase {
 	return &portfolioUsecase{moralis: svc}
 }
 

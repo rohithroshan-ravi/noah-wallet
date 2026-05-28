@@ -145,6 +145,11 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg.type === "__NOAH_DEV_RELOAD__") {
+    chrome.runtime.reload();
+    return false;
+  }
+
   if (msg.type === "NOAH_PROVIDER_REQUEST") {
     handleProviderRequest(msg.payload)
       .then(sendResponse)

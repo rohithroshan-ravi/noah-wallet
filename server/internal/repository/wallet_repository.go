@@ -2,10 +2,10 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/domain"
+	"github.com/rohithroshan-ravi/noah-wallet/server/internal/usecase"
 )
 
 type inMemoryWalletRepo struct {
@@ -13,9 +13,10 @@ type inMemoryWalletRepo struct {
 	wallets map[string]*domain.Wallet
 }
 
+var _ usecase.WalletRepository = (*inMemoryWalletRepo)(nil)
+
 // NewWalletRepository returns an in-memory WalletRepository.
-// Replace with a real DB implementation when needed.
-func NewWalletRepository() domain.WalletRepository {
+func NewWalletRepository() usecase.WalletRepository {
 	return &inMemoryWalletRepo{
 		wallets: make(map[string]*domain.Wallet),
 	}
@@ -27,15 +28,8 @@ func (r *inMemoryWalletRepo) FindByAddress(ctx context.Context, address string) 
 
 	w, ok := r.wallets[address]
 	if !ok {
-		return nil, errors.New("wallet not found")
+		return nil, domain.ErrNotFound
 	}
 	return w, nil
 }
 
-func (r *inMemoryWalletRepo) Save(ctx context.Context, wallet *domain.Wallet) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	r.wallets[wallet.Address] = wallet
-	return nil
-}

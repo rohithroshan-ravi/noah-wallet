@@ -6,6 +6,7 @@ import (
 	"github.com/rohithroshan-ravi/noah-wallet/server/config"
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/repository"
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/router"
+	"github.com/rohithroshan-ravi/noah-wallet/server/internal/service/lifi"
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/service/moralis"
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/usecase"
 )
@@ -27,7 +28,10 @@ func main() {
 	moralisSvc := moralis.New(cfg.MoralisAPIKey)
 	portfolioUC := usecase.NewPortfolioUsecase(moralisSvc)
 
-	router.Register(e, walletUC, portfolioUC, cfg.APIKeys)
+	lifiSvc := lifi.New()
+	swapUC := usecase.NewSwapUsecase(lifiSvc)
+
+	router.Register(e, walletUC, portfolioUC, swapUC, cfg.APIKeys)
 
 	e.Logger.Fatal(e.Start(":" + cfg.Port))
 }
