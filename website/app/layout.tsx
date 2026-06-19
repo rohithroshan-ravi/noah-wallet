@@ -1,5 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { QueryProvider } from '@/providers/QueryProvider';
+import { configureApiClient } from '@/lib/api';
+
+configureApiClient();
 
 export const metadata: Metadata = {
   title: 'Noah Wallet - Your Web3 Gateway',
@@ -13,7 +17,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-[#0d0d0d] text-white">{children}</body>
+      <body className="bg-[#0d0d0d] text-white">
+        <QueryProvider>{children}</QueryProvider>
+      </body>
     </html>
   );
 }
