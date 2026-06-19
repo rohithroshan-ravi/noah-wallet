@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/domain"
+	"github.com/rohithroshan-ravi/noah-wallet/server/internal/provider"
 )
 
 const baseURL = "https://deep-index.moralis.io/api/v2.2"
@@ -31,6 +32,8 @@ func New(apiKey string) *Client {
 		},
 	}
 }
+
+func (c *Client) Name() string { return "moralis" }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,6 +58,9 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, out int
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20)) // 4 MB cap
 	if err != nil {
 		return fmt.Errorf("moralis: read body: %w", err)
+	}
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return fmt.Errorf("moralis: %w", provider.ErrRateLimit)
 	}
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("moralis: status %d: %s", resp.StatusCode, body)

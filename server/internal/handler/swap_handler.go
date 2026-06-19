@@ -23,53 +23,53 @@ func NewSwapHandler(uc usecase.SwapUsecase) *SwapHandler {
 func (h *SwapHandler) GetChains(c echo.Context) error {
 	data, err := h.uc.GetChains(c.Request().Context())
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
-	return response.OK(c, data)
+	return response.OKList(c, data, len(data))
 }
 
 // GetTokens GET /api/v1/swap/tokens?chainId=1
 func (h *SwapHandler) GetTokens(c echo.Context) error {
 	raw := c.QueryParam("chainId")
 	if raw == "" {
-		return response.BadRequest(c, "chainId is required")
+		return response.BadRequest(c, response.CodeInvalidParam, "chainId is required")
 	}
 	chainID, err := strconv.Atoi(raw)
 	if err != nil || chainID <= 0 {
-		return response.BadRequest(c, "invalid chainId")
+		return response.BadRequest(c, response.CodeInvalidParam, "invalid chainId")
 	}
 	data, err := h.uc.GetTokens(c.Request().Context(), chainID)
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
-	return response.OK(c, data)
+	return response.OKList(c, data, len(data))
 }
 
 // GetQuote GET /api/v1/swap/quote
 func (h *SwapHandler) GetQuote(c echo.Context) error {
 	fromChain, err := strconv.Atoi(c.QueryParam("fromChain"))
 	if err != nil || fromChain <= 0 {
-		return response.BadRequest(c, "invalid fromChain")
+		return response.BadRequest(c, response.CodeInvalidParam, "invalid fromChain")
 	}
 	toChain, err := strconv.Atoi(c.QueryParam("toChain"))
 	if err != nil || toChain <= 0 {
-		return response.BadRequest(c, "invalid toChain")
+		return response.BadRequest(c, response.CodeInvalidParam, "invalid toChain")
 	}
 	fromToken := c.QueryParam("fromToken")
 	if fromToken == "" {
-		return response.BadRequest(c, "fromToken is required")
+		return response.BadRequest(c, response.CodeInvalidParam, "fromToken is required")
 	}
 	toToken := c.QueryParam("toToken")
 	if toToken == "" {
-		return response.BadRequest(c, "toToken is required")
+		return response.BadRequest(c, response.CodeInvalidParam, "toToken is required")
 	}
 	fromAmount := c.QueryParam("fromAmount")
 	if fromAmount == "" {
-		return response.BadRequest(c, "fromAmount is required")
+		return response.BadRequest(c, response.CodeInvalidParam, "fromAmount is required")
 	}
 	fromAddress := c.QueryParam("fromAddress")
 	if fromAddress == "" {
-		return response.BadRequest(c, "fromAddress is required")
+		return response.BadRequest(c, response.CodeInvalidParam, "fromAddress is required")
 	}
 
 	var slippage float64
@@ -77,7 +77,7 @@ func (h *SwapHandler) GetQuote(c echo.Context) error {
 		slippage, _ = strconv.ParseFloat(s, 64)
 	}
 
-	params := domain.LifiQuoteParams{
+	data, err := h.uc.GetQuote(c.Request().Context(), domain.LifiQuoteParams{
 		FromChain:   fromChain,
 		ToChain:     toChain,
 		FromToken:   fromToken,
@@ -85,11 +85,9 @@ func (h *SwapHandler) GetQuote(c echo.Context) error {
 		FromAmount:  fromAmount,
 		FromAddress: fromAddress,
 		Slippage:    slippage,
-	}
-
-	data, err := h.uc.GetQuote(c.Request().Context(), params)
+	})
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
 	return response.OK(c, data)
 }

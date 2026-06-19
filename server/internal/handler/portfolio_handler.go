@@ -25,7 +25,7 @@ func NewPortfolioHandler(uc usecase.PortfolioUsecase) *PortfolioHandler {
 func (h *PortfolioHandler) parseParams(c echo.Context) (address, chain string, ok bool) {
 	address = c.Param("address")
 	if !ethutil.ValidAddress(address) {
-		_ = response.BadRequest(c, "invalid Ethereum address")
+		_ = response.BadRequest(c, response.CodeInvalidAddress, "invalid Ethereum address")
 		return "", "", false
 	}
 	chain = c.QueryParam("chain")
@@ -33,25 +33,21 @@ func (h *PortfolioHandler) parseParams(c echo.Context) (address, chain string, o
 		chain = "eth"
 	}
 	if !ethutil.ValidChain(chain) {
-		_ = response.BadRequest(c, "unsupported chain identifier")
+		_ = response.BadRequest(c, response.CodeInvalidChain, "unsupported chain identifier")
 		return "", "", false
 	}
 	return address, chain, true
 }
 
 func (h *PortfolioHandler) parseDays(c echo.Context) int {
-	s := c.QueryParam("days")
-	if s == "" {
-		return 0
-	}
-	d, err := strconv.Atoi(s)
+	d, err := strconv.Atoi(c.QueryParam("days"))
 	if err != nil || d < 0 {
 		return 0
 	}
 	return d
 }
 
-// ── Handlers ──────────────────────────────────────────────────────────────────
+// ── Handlers ─────────────────────────────────────────────────────────────────
 
 // GetNativeBalance GET /api/v1/wallets/:address/balance
 func (h *PortfolioHandler) GetNativeBalance(c echo.Context) error {
@@ -61,7 +57,7 @@ func (h *PortfolioHandler) GetNativeBalance(c echo.Context) error {
 	}
 	data, err := h.uc.GetNativeBalance(c.Request().Context(), addr, chain)
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
 	return response.OK(c, data)
 }
@@ -74,9 +70,9 @@ func (h *PortfolioHandler) GetTokenBalances(c echo.Context) error {
 	}
 	data, err := h.uc.GetTokenBalances(c.Request().Context(), addr, chain)
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
-	return response.OK(c, data)
+	return response.OKList(c, data, len(data))
 }
 
 // GetNFTs GET /api/v1/wallets/:address/nfts
@@ -87,9 +83,9 @@ func (h *PortfolioHandler) GetNFTs(c echo.Context) error {
 	}
 	data, err := h.uc.GetNFTs(c.Request().Context(), addr, chain)
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
-	return response.OK(c, data)
+	return response.OKList(c, data, len(data))
 }
 
 // GetWalletHistory GET /api/v1/wallets/:address/history
@@ -100,9 +96,9 @@ func (h *PortfolioHandler) GetWalletHistory(c echo.Context) error {
 	}
 	data, err := h.uc.GetWalletHistory(c.Request().Context(), addr, chain)
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
-	return response.OK(c, data)
+	return response.OKList(c, data, len(data))
 }
 
 // GetTransactions GET /api/v1/wallets/:address/transactions
@@ -113,9 +109,9 @@ func (h *PortfolioHandler) GetTransactions(c echo.Context) error {
 	}
 	data, err := h.uc.GetTransactions(c.Request().Context(), addr, chain)
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
-	return response.OK(c, data)
+	return response.OKList(c, data, len(data))
 }
 
 // GetDeFiPositions GET /api/v1/wallets/:address/defi
@@ -126,9 +122,9 @@ func (h *PortfolioHandler) GetDeFiPositions(c echo.Context) error {
 	}
 	data, err := h.uc.GetDeFiPositions(c.Request().Context(), addr, chain)
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
-	return response.OK(c, data)
+	return response.OKList(c, data, len(data))
 }
 
 // GetNetWorth GET /api/v1/wallets/:address/net-worth
@@ -136,7 +132,7 @@ func (h *PortfolioHandler) GetDeFiPositions(c echo.Context) error {
 func (h *PortfolioHandler) GetNetWorth(c echo.Context) error {
 	address := c.Param("address")
 	if !ethutil.ValidAddress(address) {
-		return response.BadRequest(c, "invalid Ethereum address")
+		return response.BadRequest(c, response.CodeInvalidAddress, "invalid Ethereum address")
 	}
 	rawChains := c.QueryParams()["chains[]"]
 	if len(rawChains) == 0 {
@@ -149,7 +145,7 @@ func (h *PortfolioHandler) GetNetWorth(c echo.Context) error {
 			continue
 		}
 		if !ethutil.ValidChain(ch) {
-			return response.BadRequest(c, "unsupported chain: "+ch)
+			return response.BadRequest(c, response.CodeInvalidChain, "unsupported chain: "+ch)
 		}
 		chains = append(chains, ch)
 	}
@@ -158,7 +154,7 @@ func (h *PortfolioHandler) GetNetWorth(c echo.Context) error {
 	}
 	data, err := h.uc.GetNetWorth(c.Request().Context(), address, chains)
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
 	return response.OK(c, data)
 }
@@ -171,7 +167,7 @@ func (h *PortfolioHandler) GetPnLSummary(c echo.Context) error {
 	}
 	data, err := h.uc.GetPnLSummary(c.Request().Context(), addr, chain, h.parseDays(c))
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
 	return response.OK(c, data)
 }
@@ -184,20 +180,20 @@ func (h *PortfolioHandler) GetPnLBreakdown(c echo.Context) error {
 	}
 	data, err := h.uc.GetPnLBreakdown(c.Request().Context(), addr, chain, h.parseDays(c))
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
-	return response.OK(c, data)
+	return response.OKList(c, data, len(data))
 }
 
 // ResolveENS GET /api/v1/wallets/:address/ens
 func (h *PortfolioHandler) ResolveENS(c echo.Context) error {
 	address := c.Param("address")
 	if !ethutil.ValidAddress(address) {
-		return response.BadRequest(c, "invalid Ethereum address")
+		return response.BadRequest(c, response.CodeInvalidAddress, "invalid Ethereum address")
 	}
 	data, err := h.uc.ResolveENS(c.Request().Context(), address)
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
 	return response.OK(c, data)
 }
@@ -210,7 +206,7 @@ func (h *PortfolioHandler) GetApprovals(c echo.Context) error {
 	}
 	data, err := h.uc.GetApprovals(c.Request().Context(), addr, chain)
 	if err != nil {
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
-	return response.OK(c, data)
+	return response.OKList(c, data, len(data))
 }

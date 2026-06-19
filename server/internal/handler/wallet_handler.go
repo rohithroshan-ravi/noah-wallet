@@ -24,8 +24,7 @@ func (h *WalletHandler) GetWallet(c echo.Context) error {
 		if errors.Is(err, domain.ErrNotFound) {
 			return response.NotFound(c, "wallet not found")
 		}
-		return response.InternalError(c, err.Error())
+		return serviceError(c, err)
 	}
 	return response.OK(c, wallet)
 }
-

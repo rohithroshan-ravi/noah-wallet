@@ -8,7 +8,9 @@ import (
 type Config struct {
 	Port           string
 	MoralisAPIKey  string
-	APIKeys        []string // keys the extension must send as X-API-Key
+	CovalentAPIKey string // GoldRush API key (goldrush.dev) — fallback provider
+	AnkrAPIKey     string // Ankr Advanced API key — second fallback (empty = public endpoint)
+	APIKeys        []string
 	AllowedOrigins []string
 }
 
@@ -28,6 +30,8 @@ func Load() *Config {
 	return &Config{
 		Port:           port,
 		MoralisAPIKey:  os.Getenv("MORALIS_API_KEY"),
+		CovalentAPIKey: os.Getenv("COVALENT_API_KEY"),
+		AnkrAPIKey:     os.Getenv("ANKR_API_KEY"),
 		APIKeys:        apiKeys,
 		AllowedOrigins: origins,
 	}

@@ -5,9 +5,10 @@ import type { StoredState, StoredWallet, TokenBalance } from "../types";
 import { decryptText, encryptText } from "../utils/crypto";
 import {
   fetchNativeBalance,
-  fetchNativeUsdPrice,
+  fetchNetWorth,
   fetchTokenBalances,
   fetchTransactions,
+  nativeTokenInfo,
 } from "../utils/api";
 import { readStoredState, touchLockTimer, writeStoredState } from "../utils/storage";
 import { sendErc20Transfer, sendNativeTransfer } from "../utils/evm";
@@ -87,15 +88,16 @@ async function pushSession(address: string | null, privateKey: string | null, ch
 
 function mapTokensToPortfolio(
   nativeBalance: string,
-  nativeUsdPrice: number,
+  nativeUsdValue: number,
+  nativeSymbol: string,
+  nativeName: string,
   tokens: TokenBalance[],
 ): PortfolioToken[] {
-  const nativeUsd = parseFloat(nativeBalance) * nativeUsdPrice;
   const native: PortfolioToken = {
-    symbol: "ETH",
-    name: "Ethereum",
+    symbol: nativeSymbol,
+    name: nativeName,
     balance: nativeBalance,
-    usdValue: nativeUsd,
+    usdValue: nativeUsdValue,
   };
   return [
     native,
@@ -226,12 +228,15 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
     const { wallet, unlocked, account, chainId } = get();
     if (!wallet || !unlocked || !account) return;
     try {
-      const [nativeBal, nativePrice, tokens] = await Promise.all([
+      const [nativeBal, tokens, totalUsd] = await Promise.all([
         fetchNativeBalance(account, chainId),
-        fetchNativeUsdPrice(chainId),
         fetchTokenBalances(account, chainId),
+        fetchNetWorth(account, chainId),
       ]);
-      set({ portfolio: mapTokensToPortfolio(nativeBal, nativePrice, tokens) });
+      const tokenUsdSum = tokens.reduce((s, t) => s + (t.usdValue ?? 0), 0);
+      const nativeUsd = Math.max(0, totalUsd - tokenUsdSum);
+      const { symbol, name } = nativeTokenInfo(chainId);
+      set({ portfolio: mapTokensToPortfolio(nativeBal, nativeUsd, symbol, name, tokens) });
     } catch { /* silent — stale data is acceptable */ }
   },
 

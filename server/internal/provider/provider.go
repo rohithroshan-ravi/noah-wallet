@@ -1,27 +1,27 @@
-package usecase
+package provider
 
 import (
 	"context"
+	"errors"
 
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/domain"
 )
 
-// WalletRepository is the outbound port for wallet lookups.
-type WalletRepository interface {
-	FindByAddress(ctx context.Context, address string) (*domain.Wallet, error)
-}
+// ErrRateLimit is returned when a provider rejects the request with HTTP 429.
+// The failover layer catches this and switches to the next registered provider.
+var ErrRateLimit = errors.New("provider: rate limit exceeded")
 
-// LifiService is the outbound port for all LI.FI swap/bridge API calls.
-type LifiService interface {
-	GetChains(ctx context.Context) ([]domain.LifiChain, error)
-	GetTokens(ctx context.Context, chainID int) ([]domain.LifiToken, error)
-	GetQuote(ctx context.Context, params domain.LifiQuoteParams) (*domain.LifiQuote, error)
-}
+// ErrNotSupported is returned when a provider does not implement a method.
+// The failover layer will skip this provider and try the next one.
+var ErrNotSupported = errors.New("provider: method not supported")
 
-// BlockchainDataService is the outbound port for EVM blockchain data.
-// The concrete implementation is selected at startup and may be a multi-provider
-// failover that automatically switches on rate limits.
-type BlockchainDataService interface {
+// BlockchainProvider is the common contract every EVM data adapter must satisfy.
+// Use NewFailover to compose multiple implementations with automatic rate-limit
+// switching — callers always see a single BlockchainProvider.
+type BlockchainProvider interface {
+	// Name returns a short identifier used in logging and rate-limit tracking.
+	Name() string
+
 	GetNativeBalance(ctx context.Context, address, chain string) (*domain.NativeBalance, error)
 	GetTokenBalances(ctx context.Context, address, chain string) ([]domain.Token, error)
 	GetNFTs(ctx context.Context, address, chain string) ([]domain.NFT, error)
