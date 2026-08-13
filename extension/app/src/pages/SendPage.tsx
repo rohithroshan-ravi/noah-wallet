@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, ChevronDown } from "../components/Icons";
 import { useWalletStore } from "../store/walletStore";
+import { DEFAULT_NETWORKS } from "../../../src/shared/networks";
 
 type Props = { onBack: () => void };
 
@@ -10,16 +11,29 @@ export function SendPage({ onBack }: Props) {
   const loading = useWalletStore((s) => s.loading);
   const error = useWalletStore((s) => s.error);
   const txHash = useWalletStore((s) => s.lastTxHash);
+  const chainId = useWalletStore((s) => s.chainId);
+  const customNetworks = useWalletStore((s) => s.customNetworks);
+  const setChainId = useWalletStore((s) => s.setChainId);
 
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [networkOpen, setNetworkOpen] = useState(false);
 
   const token = portfolio[selectedIdx];
+  const networks = { ...DEFAULT_NETWORKS, ...customNetworks };
+  const currentNetwork = networks[chainId];
 
   const handleSend = async () => {
     if (!to || !amount) return;
     await sendNative(to, amount);
+  };
+
+  const handleSwitchNetwork = async (id: string) => {
+    setNetworkOpen(false);
+    if (id === chainId) return;
+    setSelectedIdx(0); // the token list is chain-scoped and about to change
+    await setChainId(id);
   };
 
   if (txHash) {
@@ -41,7 +55,42 @@ export function SendPage({ onBack }: Props) {
         <ArrowLeft />
       </button>
 
-      <h1 className="mb-6 text-xl font-extrabold text-white">Send</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-xl font-extrabold text-white">Send</h1>
+
+        {/* Network switcher */}
+        <div className="relative">
+          <button
+            className="flex items-center gap-1.5 rounded-full border border-[#2a2a2a] bg-[#161616] px-3 py-1.5 text-xs font-semibold text-white hover:border-[#c8ff00] transition"
+            onClick={() => setNetworkOpen((o) => !o)}
+          >
+            {currentNetwork?.chainName ?? `Chain ${chainId}`}
+            <ChevronDown size={14} className="text-[#888]" />
+          </button>
+
+          {networkOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setNetworkOpen(false)} />
+              <div className="card absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden p-1">
+                {Object.values(networks).map((net) => (
+                  <button
+                    key={net.chainId}
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${
+                      net.chainId === chainId
+                        ? "bg-[#c8ff0020] text-[#c8ff00]"
+                        : "text-white hover:bg-[#222]"
+                    }`}
+                    onClick={() => handleSwitchNetwork(net.chainId)}
+                  >
+                    {net.chainName}
+                    {net.chainId === chainId && <span className="text-xs">✓</span>}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
       <div className="space-y-4">
         {/* Token selector */}

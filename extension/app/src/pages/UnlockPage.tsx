@@ -20,9 +20,7 @@ export function UnlockPage({ onUnlocked }: Props) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#0d0d0d] px-6">
       {/* Logo */}
-      <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#c8ff00]">
-        <span className="text-2xl font-extrabold text-black">N</span>
-      </div>
+      <img src="/icons/logo-white.svg" alt="Noah Wallet" className="mb-3 h-14 w-14" />
       <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#c8ff00]">Noah Wallet</p>
 
       <h1 className="mb-1 mt-6 text-2xl font-extrabold text-white">Unlock Your Wallet</h1>

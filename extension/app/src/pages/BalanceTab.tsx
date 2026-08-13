@@ -26,9 +26,7 @@ export function BalanceTab({ onReceive, onSend, onSwap }: Props) {
     <div className="flex flex-col pb-20">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#c8ff00] to-[#6bde00]">
-          <span className="text-xs font-black text-black">N</span>
-        </div>
+        <img src="/icons/logo-white-sm.svg" alt="Noah Wallet" className="h-9 w-9" />
         <div className="text-center">
           <p className="text-xs font-semibold text-white">Noah Wallet</p>
           <button

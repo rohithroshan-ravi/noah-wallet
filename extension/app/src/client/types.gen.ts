@@ -65,6 +65,25 @@ export type Transaction = {
     transaction_fee?: string;
 };
 
+export type TokenTransfer = {
+    tx_hash?: string;
+    from_address?: string;
+    to_address?: string;
+    contract_address?: string;
+    token_name?: string;
+    token_symbol?: string;
+    decimals?: string;
+    value?: string;
+    block_timestamp?: string;
+    block_number?: string;
+};
+
+export type PageMeta = {
+    page?: number;
+    pageSize?: number;
+    hasMore?: boolean;
+};
+
 export type HistoryEntry = {
     hash?: string;
     category?: string;
@@ -196,14 +215,24 @@ export type LifiQuote = {
 export type Address = string;
 
 /**
- * Moralis chain identifier. Defaults to `eth`.
+ * Internal chain identifier (see domain.Chain). A hex chain ID (e.g. `0x1`) is also accepted and normalized to the same value. Defaults to `eth`.
  */
-export type Chain = 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche';
+export type Chain = 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche' | 'fantom' | 'linea' | 'cronos';
 
 /**
  * Lookback window in days. 0 means all time.
  */
 export type Days = number;
+
+/**
+ * Zero-indexed page number. Not every configured provider can honor a page greater than 0 precisely — check `meta.page.hasMore` rather than assuming pages align exactly across provider failovers.
+ */
+export type Page = number;
+
+/**
+ * Items per page. Clamped server-side to [1, 100]; defaults to 25.
+ */
+export type PageSize = number;
 
 export type HealthCheckData = {
     body?: never;
@@ -257,9 +286,9 @@ export type GetNativeBalanceData = {
     };
     query?: {
         /**
-         * Moralis chain identifier. Defaults to `eth`.
+         * Internal chain identifier (see domain.Chain). A hex chain ID (e.g. `0x1`) is also accepted and normalized to the same value. Defaults to `eth`.
          */
-        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche';
+        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche' | 'fantom' | 'linea' | 'cronos';
     };
     url: '/api/v1/wallets/{address}/balance';
 };
@@ -282,9 +311,9 @@ export type GetTokenBalancesData = {
     };
     query?: {
         /**
-         * Moralis chain identifier. Defaults to `eth`.
+         * Internal chain identifier (see domain.Chain). A hex chain ID (e.g. `0x1`) is also accepted and normalized to the same value. Defaults to `eth`.
          */
-        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche';
+        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche' | 'fantom' | 'linea' | 'cronos';
     };
     url: '/api/v1/wallets/{address}/tokens';
 };
@@ -307,9 +336,9 @@ export type GetNftsData = {
     };
     query?: {
         /**
-         * Moralis chain identifier. Defaults to `eth`.
+         * Internal chain identifier (see domain.Chain). A hex chain ID (e.g. `0x1`) is also accepted and normalized to the same value. Defaults to `eth`.
          */
-        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche';
+        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche' | 'fantom' | 'linea' | 'cronos';
     };
     url: '/api/v1/wallets/{address}/nfts';
 };
@@ -332,9 +361,9 @@ export type GetWalletHistoryData = {
     };
     query?: {
         /**
-         * Moralis chain identifier. Defaults to `eth`.
+         * Internal chain identifier (see domain.Chain). A hex chain ID (e.g. `0x1`) is also accepted and normalized to the same value. Defaults to `eth`.
          */
-        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche';
+        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche' | 'fantom' | 'linea' | 'cronos';
     };
     url: '/api/v1/wallets/{address}/history';
 };
@@ -357,23 +386,70 @@ export type GetTransactionsData = {
     };
     query?: {
         /**
-         * Moralis chain identifier. Defaults to `eth`.
+         * Internal chain identifier (see domain.Chain). A hex chain ID (e.g. `0x1`) is also accepted and normalized to the same value. Defaults to `eth`.
          */
-        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche';
+        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche' | 'fantom' | 'linea' | 'cronos';
+        /**
+         * Zero-indexed page number. Not every configured provider can honor a page greater than 0 precisely — check `meta.page.hasMore` rather than assuming pages align exactly across provider failovers.
+         */
+        page?: number;
+        /**
+         * Items per page. Clamped server-side to [1, 100]; defaults to 25.
+         */
+        pageSize?: number;
     };
     url: '/api/v1/wallets/{address}/transactions';
 };
 
 export type GetTransactionsResponses = {
     /**
-     * Raw transaction list
+     * One page of raw transactions. `meta.page` describes the page returned — use it to request the next page rather than assuming a fixed page size, since it can vary by which provider ultimately served the request.
      */
     200: SuccessEnvelope & {
         data?: Array<Transaction>;
+        meta?: {
+            page?: PageMeta;
+        };
     };
 };
 
 export type GetTransactionsResponse = GetTransactionsResponses[keyof GetTransactionsResponses];
+
+export type GetTokenTransfersData = {
+    body?: never;
+    path: {
+        address: string;
+    };
+    query?: {
+        /**
+         * Internal chain identifier (see domain.Chain). A hex chain ID (e.g. `0x1`) is also accepted and normalized to the same value. Defaults to `eth`.
+         */
+        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche' | 'fantom' | 'linea' | 'cronos';
+        /**
+         * Zero-indexed page number. Not every configured provider can honor a page greater than 0 precisely — check `meta.page.hasMore` rather than assuming pages align exactly across provider failovers.
+         */
+        page?: number;
+        /**
+         * Items per page. Clamped server-side to [1, 100]; defaults to 25.
+         */
+        pageSize?: number;
+    };
+    url: '/api/v1/wallets/{address}/transfers';
+};
+
+export type GetTokenTransfersResponses = {
+    /**
+     * One page of ERC-20 transfer events. See /transactions for pagination semantics.
+     */
+    200: SuccessEnvelope & {
+        data?: Array<TokenTransfer>;
+        meta?: {
+            page?: PageMeta;
+        };
+    };
+};
+
+export type GetTokenTransfersResponse = GetTokenTransfersResponses[keyof GetTokenTransfersResponses];
 
 export type GetDeFiPositionsData = {
     body?: never;
@@ -382,9 +458,9 @@ export type GetDeFiPositionsData = {
     };
     query?: {
         /**
-         * Moralis chain identifier. Defaults to `eth`.
+         * Internal chain identifier (see domain.Chain). A hex chain ID (e.g. `0x1`) is also accepted and normalized to the same value. Defaults to `eth`.
          */
-        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche';
+        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche' | 'fantom' | 'linea' | 'cronos';
     };
     url: '/api/v1/wallets/{address}/defi';
 };
@@ -432,9 +508,9 @@ export type GetPnLSummaryData = {
     };
     query?: {
         /**
-         * Moralis chain identifier. Defaults to `eth`.
+         * Internal chain identifier (see domain.Chain). A hex chain ID (e.g. `0x1`) is also accepted and normalized to the same value. Defaults to `eth`.
          */
-        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche';
+        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche' | 'fantom' | 'linea' | 'cronos';
         /**
          * Lookback window in days. 0 means all time.
          */
@@ -461,9 +537,9 @@ export type GetPnLBreakdownData = {
     };
     query?: {
         /**
-         * Moralis chain identifier. Defaults to `eth`.
+         * Internal chain identifier (see domain.Chain). A hex chain ID (e.g. `0x1`) is also accepted and normalized to the same value. Defaults to `eth`.
          */
-        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche';
+        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche' | 'fantom' | 'linea' | 'cronos';
         /**
          * Lookback window in days. 0 means all time.
          */
@@ -510,9 +586,9 @@ export type GetApprovalsData = {
     };
     query?: {
         /**
-         * Moralis chain identifier. Defaults to `eth`.
+         * Internal chain identifier (see domain.Chain). A hex chain ID (e.g. `0x1`) is also accepted and normalized to the same value. Defaults to `eth`.
          */
-        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche';
+        chain?: 'eth' | 'polygon' | 'bsc' | 'optimism' | 'arbitrum' | 'base' | 'avalanche' | 'fantom' | 'linea' | 'cronos';
     };
     url: '/api/v1/wallets/{address}/approvals';
 };

@@ -16,9 +16,7 @@ export function SettingsTab({ onLock }: Props) {
       {/* Wallet card */}
       <div className="card mb-6 px-4 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#c8ff00] to-[#6bde00]">
-            <span className="text-sm font-black text-black">N</span>
-          </div>
+          <img src="/icons/logo-white-sm.svg" alt="Noah Wallet" className="h-10 w-10" />
           <div>
             <p className="text-sm font-semibold text-white">Noah Wallet</p>
             <p className="text-[11px] break-all text-[#888]">{account}</p>

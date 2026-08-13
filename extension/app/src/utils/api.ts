@@ -135,13 +135,18 @@ type BackendTx = {
   transaction_fee: string;
 };
 
+// fetchTransactions returns one page of raw native-currency transactions.
+// page is zero-indexed; both params are optional so existing callers that
+// only want the first page don't need to change.
 export async function fetchTransactions(
   address: string,
   chainId: string,
+  page = 0,
+  pageSize = 25,
 ): Promise<TxRecord[]> {
   const data = await backendGet<BackendTx[]>(
     `/wallets/${address}/transactions`,
-    { chain: chainSlug(chainId) },
+    { chain: chainSlug(chainId), page: String(page), pageSize: String(pageSize) },
   );
   if (!data) return [];
   return data.map((tx) => ({
@@ -152,6 +157,57 @@ export async function fetchTransactions(
     timestamp: tx.block_timestamp,
     status: "success" as const,
   }));
+}
+
+type BackendTransfer = {
+  tx_hash: string;
+  from_address: string;
+  to_address: string;
+  contract_address: string;
+  token_name: string;
+  token_symbol: string;
+  decimals: string;
+  value: string;
+  block_timestamp: string;
+};
+
+export type TransferRecord = {
+  hash: string;
+  from: string;
+  to: string;
+  value: string;
+  symbol: string;
+  tokenAddress: string;
+  timestamp: string;
+};
+
+// fetchTokenTransfers returns one page of decoded ERC-20 transfer events —
+// the counterpart to fetchTransactions for token movements, which the raw
+// transaction list doesn't surface (a token transfer's on-chain `value` is
+// almost always 0 ETH; the actual amount lives in the decoded log).
+export async function fetchTokenTransfers(
+  address: string,
+  chainId: string,
+  page = 0,
+  pageSize = 25,
+): Promise<TransferRecord[]> {
+  const data = await backendGet<BackendTransfer[]>(
+    `/wallets/${address}/transfers`,
+    { chain: chainSlug(chainId), page: String(page), pageSize: String(pageSize) },
+  );
+  if (!data) return [];
+  return data.map((tr) => {
+    const decimals = parseInt(tr.decimals ?? "18", 10);
+    return {
+      hash: tr.tx_hash,
+      from: tr.from_address,
+      to: tr.to_address ?? "",
+      value: ethers.formatUnits(tr.value ?? "0", isNaN(decimals) ? 18 : decimals),
+      symbol: tr.token_symbol || "TOKEN",
+      tokenAddress: tr.contract_address,
+      timestamp: tr.block_timestamp,
+    };
+  });
 }
 
 type BackendNetWorth = {

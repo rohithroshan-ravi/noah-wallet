@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetApprovalsData, GetApprovalsResponses, GetDeFiPositionsData, GetDeFiPositionsResponses, GetNativeBalanceData, GetNativeBalanceResponses, GetNetWorthData, GetNetWorthResponses, GetNftsData, GetNftsResponses, GetPnLBreakdownData, GetPnLBreakdownResponses, GetPnLSummaryData, GetPnLSummaryResponses, GetSwapChainsData, GetSwapChainsResponses, GetSwapQuoteData, GetSwapQuoteErrors, GetSwapQuoteResponses, GetSwapTokensData, GetSwapTokensErrors, GetSwapTokensResponses, GetTokenBalancesData, GetTokenBalancesResponses, GetTransactionsData, GetTransactionsResponses, GetWalletData, GetWalletErrors, GetWalletHistoryData, GetWalletHistoryResponses, GetWalletResponses, HealthCheckData, HealthCheckResponses, ResolveEnsData, ResolveEnsResponses } from './types.gen';
+import type { GetApprovalsData, GetApprovalsResponses, GetDeFiPositionsData, GetDeFiPositionsResponses, GetNativeBalanceData, GetNativeBalanceResponses, GetNetWorthData, GetNetWorthResponses, GetNftsData, GetNftsResponses, GetPnLBreakdownData, GetPnLBreakdownResponses, GetPnLSummaryData, GetPnLSummaryResponses, GetSwapChainsData, GetSwapChainsResponses, GetSwapQuoteData, GetSwapQuoteErrors, GetSwapQuoteResponses, GetSwapTokensData, GetSwapTokensErrors, GetSwapTokensResponses, GetTokenBalancesData, GetTokenBalancesResponses, GetTokenTransfersData, GetTokenTransfersResponses, GetTransactionsData, GetTransactionsResponses, GetWalletData, GetWalletErrors, GetWalletHistoryData, GetWalletHistoryResponses, GetWalletResponses, HealthCheckData, HealthCheckResponses, ResolveEnsData, ResolveEnsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -69,11 +69,20 @@ export const getWalletHistory = <ThrowOnError extends boolean = false>(options: 
 });
 
 /**
- * Get raw on-chain transactions
+ * Get raw on-chain transactions (paginated)
  */
 export const getTransactions = <ThrowOnError extends boolean = false>(options: Options<GetTransactionsData, ThrowOnError>) => (options.client ?? client).get<GetTransactionsResponses, unknown, ThrowOnError>({
     security: [{ name: 'X-API-Key', type: 'apiKey' }],
     url: '/api/v1/wallets/{address}/transactions',
+    ...options
+});
+
+/**
+ * Get decoded ERC-20 token transfer events (paginated)
+ */
+export const getTokenTransfers = <ThrowOnError extends boolean = false>(options: Options<GetTokenTransfersData, ThrowOnError>) => (options.client ?? client).get<GetTokenTransfersResponses, unknown, ThrowOnError>({
+    security: [{ name: 'X-API-Key', type: 'apiKey' }],
+    url: '/api/v1/wallets/{address}/transfers',
     ...options
 });
 

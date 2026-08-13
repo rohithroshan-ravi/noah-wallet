@@ -7,6 +7,7 @@ import {
   fetchNativeBalance,
   fetchNetWorth,
   fetchTokenBalances,
+  fetchTokenTransfers,
   fetchTransactions,
   nativeTokenInfo,
 } from "../utils/api";
@@ -61,6 +62,7 @@ type WalletStore = {
   lockWallet: () => void;
   refreshPortfolio: () => Promise<void>;
   refreshTxHistory: () => Promise<void>;
+  setChainId: (chainId: string) => Promise<void>;
   sendNative: (to: string, amount: string) => Promise<void>;
   sendToken: (tokenAddress: string, to: string, amount: string, decimals: number) => Promise<void>;
   setPendingSecret: (s: string) => void;
@@ -244,20 +246,60 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
     const { wallet, unlocked, account, chainId } = get();
     if (!wallet || !unlocked || !account) return;
     try {
-      const txs = await fetchTransactions(account, chainId);
-      set({
-        txHistory: txs.map((tx) => ({
+      // Native transactions and ERC-20 transfers are separate backend
+      // endpoints (a token transfer's on-chain `value` is ~always 0 ETH —
+      // the amount only exists in the decoded transfer), so merge both into
+      // one feed the way the UI expects.
+      const [txs, transfers] = await Promise.all([
+        fetchTransactions(account, chainId),
+        fetchTokenTransfers(account, chainId),
+      ]);
+      const { symbol: nativeSymbol } = nativeTokenInfo(chainId);
+      const transferHashes = new Set(transfers.map((tr) => tr.hash));
+
+      const nativeRows: UiTxRecord[] = txs
+        // A tx that's purely a token transfer still shows up here with
+        // value=0 — drop it so it isn't duplicated alongside its own
+        // transfer row below.
+        .filter((tx) => !(transferHashes.has(tx.hash) && Number(tx.value) === 0))
+        .map((tx) => ({
           hash: tx.hash,
           from: tx.from,
           to: tx.to,
           value: tx.value,
-          symbol: "ETH",
+          symbol: nativeSymbol,
           direction: tx.to.toLowerCase() === account.toLowerCase() ? "in" : "out",
           date: tx.timestamp,
           status: tx.status ?? "success",
-        })),
-      });
+        }));
+
+      const transferRows: UiTxRecord[] = transfers.map((tr) => ({
+        hash: tr.hash,
+        from: tr.from,
+        to: tr.to,
+        value: tr.value,
+        symbol: tr.symbol,
+        direction: tr.to.toLowerCase() === account.toLowerCase() ? "in" : "out",
+        date: tr.timestamp,
+        status: "success",
+      }));
+
+      const merged = [...nativeRows, ...transferRows].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
+      set({ txHistory: merged });
     } catch { /* silent */ }
+  },
+
+  // setChainId switches the active network everywhere at once: persisted
+  // state, the background script's session (so signing uses the right
+  // chain), and the chain-scoped portfolio/history views.
+  setChainId: async (chainId) => {
+    const { wallet, unlockedPrivateKey, customNetworks, darkMode, autoLockMinutes } = get();
+    set({ chainId, portfolio: [], txHistory: [] }); // stale data from the old chain must not linger
+    await persistState(wallet, chainId, customNetworks, darkMode, autoLockMinutes);
+    pushSession(wallet?.address ?? null, unlockedPrivateKey, chainId);
+    await Promise.all([get().refreshPortfolio(), get().refreshTxHistory()]);
   },
 
   sendNative: async (to, amount) => {

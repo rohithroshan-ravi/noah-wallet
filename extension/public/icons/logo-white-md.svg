@@ -1,0 +1,39 @@
+<svg width="128" height="128" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Noah Wallet shield mark (light, for dark backgrounds) -->
+  <path
+    d="M50 18
+       C46 14 40 10 34 9
+       C26 8 20 12 18 20
+       L18 48
+       C18 70 32 86 50 96
+       C68 86 82 70 82 48
+       L82 20
+       C80 12 74 8 66 9
+       C60 10 54 14 50 18
+       Z"
+    fill="#ffffff"
+  />
+  <!-- Engraved detail: mirrored facing hooks -->
+  <path
+    d="M46 34
+       C38 36 34 44 36 52
+       C37.5 58 42 62 48 63
+       L48 57
+       C44 56 41.5 53 41 49
+       C40.5 44 43 39 49 37
+       Z"
+    fill="#0d0d0d"
+  />
+  <path
+    d="M54 34
+       C62 36 66 44 64 52
+       C62.5 58 58 62 52 63
+       L52 57
+       C56 56 58.5 53 59 49
+       C59.5 44 57 39 51 37
+       Z"
+    fill="#0d0d0d"
+  />
+  <!-- Bottom accent -->
+  <path d="M50 65 L55.5 71 L50 77.5 L44.5 71 Z" fill="#0d0d0d"/>
+</svg>
