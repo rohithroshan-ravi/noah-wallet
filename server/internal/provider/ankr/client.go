@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -68,6 +69,9 @@ func (c *Client) call(ctx context.Context, method string, params interface{}, ou
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			return fmt.Errorf("ankr: %w", provider.ErrTimeout)
+		}
 		return fmt.Errorf("ankr: request failed: %w", err)
 	}
 	defer resp.Body.Close()
@@ -76,14 +80,19 @@ func (c *Client) call(ctx context.Context, method string, params interface{}, ou
 	if err != nil {
 		return fmt.Errorf("ankr: read body: %w", err)
 	}
-	if resp.StatusCode == http.StatusTooManyRequests {
+
+	switch {
+	case resp.StatusCode == http.StatusTooManyRequests:
 		return fmt.Errorf("ankr: %w", provider.ErrRateLimit)
-	}
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("ankr: status %d: %s", resp.StatusCode, body)
+	case resp.StatusCode == http.StatusUnauthorized, resp.StatusCode == http.StatusForbidden:
+		return fmt.Errorf("ankr: %w", provider.ErrAuthFailed)
+	case resp.StatusCode >= 500:
+		return fmt.Errorf("ankr: %w (status %d)", provider.ErrUnavailable, resp.StatusCode)
+	case resp.StatusCode >= 400:
+		return fmt.Errorf("ankr: status %d: %s", resp.StatusCode, truncate(body, 200))
 	}
 
-	// Detect JSON-RPC level rate-limit error (-32005)
+	// Detect JSON-RPC level errors, including the -32005 rate-limit code.
 	var rpcErr struct {
 		Error *struct {
 			Code    int    `json:"code"`
@@ -94,10 +103,23 @@ func (c *Client) call(ctx context.Context, method string, params interface{}, ou
 		if rpcErr.Error.Code == -32005 {
 			return fmt.Errorf("ankr: %w", provider.ErrRateLimit)
 		}
+		if rpcErr.Error.Code == -32401 || rpcErr.Error.Code == -32403 {
+			return fmt.Errorf("ankr: %w", provider.ErrAuthFailed)
+		}
 		return fmt.Errorf("ankr: rpc error %d: %s", rpcErr.Error.Code, rpcErr.Error.Message)
 	}
 
-	return json.Unmarshal(body, out)
+	if err := json.Unmarshal(body, out); err != nil {
+		return fmt.Errorf("ankr: %w: %v", provider.ErrInvalidResponse, err)
+	}
+	return nil
+}
+
+func truncate(b []byte, n int) string {
+	if len(b) <= n {
+		return string(b)
+	}
+	return string(b[:n]) + "…"
 }
 
 // ── Asset Holdings ────────────────────────────────────────────────────────────
@@ -106,7 +128,7 @@ func (c *Client) GetNativeBalance(ctx context.Context, address, chain string) (*
 	var resp struct {
 		Result struct {
 			Assets []struct {
-				TokenType        string `json:"tokenType"`
+				TokenType         string `json:"tokenType"`
 				BalanceRawInteger string `json:"balanceRawInteger"`
 			} `json:"assets"`
 		} `json:"result"`
@@ -130,16 +152,16 @@ func (c *Client) GetTokenBalances(ctx context.Context, address, chain string) ([
 	var resp struct {
 		Result struct {
 			Assets []struct {
-				TokenType        string  `json:"tokenType"`
-				ContractAddress  string  `json:"contractAddress"`
-				TokenName        string  `json:"tokenName"`
-				TokenSymbol      string  `json:"tokenSymbol"`
-				TokenDecimals    int     `json:"tokenDecimals"`
-				Balance          string  `json:"balance"`
+				TokenType         string `json:"tokenType"`
+				ContractAddress   string `json:"contractAddress"`
+				TokenName         string `json:"tokenName"`
+				TokenSymbol       string `json:"tokenSymbol"`
+				TokenDecimals     int    `json:"tokenDecimals"`
+				Balance           string `json:"balance"`
 				BalanceRawInteger string `json:"balanceRawInteger"`
-				BalanceUsd       string  `json:"balanceUsd"`
-				TokenPrice       string  `json:"tokenPrice"`
-				Thumbnail        string  `json:"thumbnail"`
+				BalanceUsd        string `json:"balanceUsd"`
+				TokenPrice        string `json:"tokenPrice"`
+				Thumbnail         string `json:"thumbnail"`
 			} `json:"assets"`
 		} `json:"result"`
 	}
@@ -216,27 +238,36 @@ func (c *Client) GetWalletHistory(_ context.Context, _, _ string) ([]domain.Hist
 	return nil, provider.ErrNotSupported
 }
 
-func (c *Client) GetTransactions(ctx context.Context, address, chain string) ([]domain.Transaction, error) {
+// GetTransactions returns one page of transactions.
+//
+// Ankr paginates ankr_getTransactionsByAddress with an opaque pageToken, not
+// a page number; this adapter only has domain.Pagination.Page (an int) to
+// work with, so — like the Moralis adapter — it always serves page 0 and
+// reports PageInfo.HasMore from Ankr's nextPageToken so truncation is visible
+// even though deep paging isn't.
+func (c *Client) GetTransactions(ctx context.Context, address, chain string, page domain.Pagination) (domain.TransactionPage, error) {
+	page = page.Normalize(25, 100)
 	var resp struct {
 		Result struct {
-			Transactions []struct {
-				Hash      string `json:"hash"`
-				From      string `json:"from"`
-				To        string `json:"to"`
-				Value     string `json:"value"`
-				Gas       string `json:"gas"`
-				GasPrice  string `json:"gasPrice"`
+			NextPageToken string `json:"nextPageToken"`
+			Transactions  []struct {
+				Hash        string `json:"hash"`
+				From        string `json:"from"`
+				To          string `json:"to"`
+				Value       string `json:"value"`
+				Gas         string `json:"gas"`
+				GasPrice    string `json:"gasPrice"`
 				BlockNumber string `json:"blockNumber"`
-				Timestamp string `json:"timestamp"`
+				Timestamp   string `json:"timestamp"`
 			} `json:"transactions"`
 		} `json:"result"`
 	}
 	if err := c.call(ctx, "ankr_getTransactionsByAddress", map[string]interface{}{
 		"address":    address,
 		"blockchain": chain,
-		"pageSize":   100,
+		"pageSize":   page.PageSize,
 	}, &resp); err != nil {
-		return nil, err
+		return domain.TransactionPage{}, err
 	}
 	out := make([]domain.Transaction, len(resp.Result.Transactions))
 	for i, tx := range resp.Result.Transactions {
@@ -252,7 +283,18 @@ func (c *Client) GetTransactions(ctx context.Context, address, chain string) ([]
 			TransactionFee: "",
 		}
 	}
-	return out, nil
+	return domain.TransactionPage{
+		Items: out,
+		Page:  domain.PageInfo{Page: 0, PageSize: page.PageSize, HasMore: resp.Result.NextPageToken != ""},
+	}, nil
+}
+
+// GetTokenTransfers is not implemented — Ankr's Advanced API has no
+// dedicated token-transfers method at the time of writing. Returning
+// ErrNotSupported lets the failover chain fall through to GoldRush/Moralis,
+// both of which do support it.
+func (c *Client) GetTokenTransfers(_ context.Context, _, _ string, _ domain.Pagination) (domain.TokenTransferPage, error) {
+	return domain.TokenTransferPage{}, provider.ErrNotSupported
 }
 
 // ── Unsupported methods ───────────────────────────────────────────────────────

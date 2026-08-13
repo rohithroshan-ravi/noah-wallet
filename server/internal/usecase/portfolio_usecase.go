@@ -12,7 +12,8 @@ type PortfolioUsecase interface {
 	GetTokenBalances(ctx context.Context, address, chain string) ([]domain.Token, error)
 	GetNFTs(ctx context.Context, address, chain string) ([]domain.NFT, error)
 	GetWalletHistory(ctx context.Context, address, chain string) ([]domain.HistoryEntry, error)
-	GetTransactions(ctx context.Context, address, chain string) ([]domain.Transaction, error)
+	GetTransactions(ctx context.Context, address, chain string, page domain.Pagination) (domain.TransactionPage, error)
+	GetTokenTransfers(ctx context.Context, address, chain string, page domain.Pagination) (domain.TokenTransferPage, error)
 	GetDeFiPositions(ctx context.Context, address, chain string) ([]domain.DeFiPosition, error)
 	GetNetWorth(ctx context.Context, address string, chains []string) (*domain.NetWorth, error)
 	GetPnLSummary(ctx context.Context, address, chain string, days int) (*domain.PnLSummary, error)
@@ -47,8 +48,12 @@ func (u *portfolioUsecase) GetWalletHistory(ctx context.Context, address, chain 
 	return u.blockchain.GetWalletHistory(ctx, address, chain)
 }
 
-func (u *portfolioUsecase) GetTransactions(ctx context.Context, address, chain string) ([]domain.Transaction, error) {
-	return u.blockchain.GetTransactions(ctx, address, chain)
+func (u *portfolioUsecase) GetTransactions(ctx context.Context, address, chain string, page domain.Pagination) (domain.TransactionPage, error) {
+	return u.blockchain.GetTransactions(ctx, address, chain, page)
+}
+
+func (u *portfolioUsecase) GetTokenTransfers(ctx context.Context, address, chain string, page domain.Pagination) (domain.TokenTransferPage, error) {
+	return u.blockchain.GetTokenTransfers(ctx, address, chain, page)
 }
 
 func (u *portfolioUsecase) GetDeFiPositions(ctx context.Context, address, chain string) ([]domain.DeFiPosition, error) {

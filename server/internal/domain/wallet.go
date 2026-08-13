@@ -66,6 +66,69 @@ type HistoryEntry struct {
 	ToAddress      string `json:"to_address"`
 }
 
+// TokenTransfer is a single ERC-20 token transfer event.
+type TokenTransfer struct {
+	TxHash          string `json:"tx_hash"`
+	FromAddress     string `json:"from_address"`
+	ToAddress       string `json:"to_address"`
+	ContractAddress string `json:"contract_address"`
+	TokenName       string `json:"token_name,omitempty"`
+	TokenSymbol     string `json:"token_symbol,omitempty"`
+	Decimals        string `json:"decimals,omitempty"`
+	Value           string `json:"value"`
+	BlockTimestamp  string `json:"block_timestamp"`
+	BlockNumber     string `json:"block_number"`
+}
+
+// ── Pagination ───────────────────────────────────────────────────────────────
+
+// Pagination is a caller-supplied request for one page of a list endpoint.
+// Page is zero-indexed. Not every provider can honor both fields precisely
+// (see each provider's doc comments for how it degrades); Failover always
+// forwards the caller's request to whichever provider ultimately serves it.
+type Pagination struct {
+	Page     int
+	PageSize int
+}
+
+// Normalize clamps Pagination to sane bounds, applying defaultSize when
+// PageSize is unset. It never mutates the receiver.
+func (p Pagination) Normalize(defaultSize, maxSize int) Pagination {
+	out := p
+	if out.Page < 0 {
+		out.Page = 0
+	}
+	if out.PageSize <= 0 {
+		out.PageSize = defaultSize
+	}
+	if out.PageSize > maxSize {
+		out.PageSize = maxSize
+	}
+	return out
+}
+
+// PageInfo describes the page actually returned by a provider, so callers
+// can request the next page without guessing at provider-specific cursors.
+type PageInfo struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"page_size"`
+	HasMore  bool `json:"has_more"`
+}
+
+// TransactionPage is one page of raw on-chain transactions plus the info
+// needed to fetch the next page.
+type TransactionPage struct {
+	Items []Transaction
+	Page  PageInfo
+}
+
+// TokenTransferPage is one page of decoded ERC-20 transfer events plus the
+// info needed to fetch the next page.
+type TokenTransferPage struct {
+	Items []TokenTransfer
+	Page  PageInfo
+}
+
 // ── DeFi Positions ───────────────────────────────────────────────────────────
 
 // DeFiPosition represents a single DeFi protocol position.
@@ -133,4 +196,3 @@ type Approval struct {
 	ValueFormatted string `json:"value_formatted,omitempty"`
 	BlockTimestamp string `json:"block_timestamp"`
 }
-

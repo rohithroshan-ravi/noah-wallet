@@ -6,7 +6,7 @@ import (
 	"github.com/rohithroshan-ravi/noah-wallet/server/config"
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/provider"
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/provider/ankr"
-	"github.com/rohithroshan-ravi/noah-wallet/server/internal/provider/covalent"
+	"github.com/rohithroshan-ravi/noah-wallet/server/internal/provider/goldrush"
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/repository"
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/router"
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/service/lifi"
@@ -31,7 +31,7 @@ func main() {
 
 	blockchain := provider.NewFailover(
 		moralis.New(cfg.MoralisAPIKey),
-		covalent.New(cfg.CovalentAPIKey),
+		goldrush.New(cfg.CovalentAPIKey),
 		ankr.New(cfg.AnkrAPIKey),
 	)
 	portfolioUC := usecase.NewPortfolioUsecase(blockchain)

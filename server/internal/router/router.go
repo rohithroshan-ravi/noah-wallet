@@ -31,6 +31,7 @@ func Register(e *echo.Echo, walletUC usecase.WalletUsecase, portfolioUC usecase.
 	// Transaction History
 	api.GET("/wallets/:address/history", ph.GetWalletHistory)
 	api.GET("/wallets/:address/transactions", ph.GetTransactions)
+	api.GET("/wallets/:address/transfers", ph.GetTokenTransfers)
 
 	// DeFi Positions
 	api.GET("/wallets/:address/defi", ph.GetDeFiPositions)

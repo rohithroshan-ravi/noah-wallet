@@ -20,22 +20,33 @@ import (
 // ── Error codes ───────────────────────────────────────────────────────────────
 
 const (
-	CodeInvalidAddress = "INVALID_ADDRESS"
-	CodeInvalidChain   = "INVALID_CHAIN"
-	CodeInvalidParam   = "INVALID_PARAM"
-	CodeNotFound       = "NOT_FOUND"
-	CodeRateLimited    = "RATE_LIMITED"
-	CodeNotSupported   = "NOT_SUPPORTED"
-	CodeInternalError  = "INTERNAL_ERROR"
+	CodeInvalidAddress      = "INVALID_ADDRESS"
+	CodeInvalidChain        = "INVALID_CHAIN"
+	CodeInvalidParam        = "INVALID_PARAM"
+	CodeNotFound            = "NOT_FOUND"
+	CodeRateLimited         = "RATE_LIMITED"
+	CodeNotSupported        = "NOT_SUPPORTED"
+	CodeInternalError       = "INTERNAL_ERROR"
+	CodeProviderUnavailable = "PROVIDER_UNAVAILABLE" // upstream data provider is down/misconfigured
+	CodeUpstreamTimeout     = "UPSTREAM_TIMEOUT"     // upstream data provider didn't respond in time
+	CodeUpstreamInvalid     = "UPSTREAM_INVALID_RESPONSE"
 )
 
 // ── Envelope types ────────────────────────────────────────────────────────────
 
 // Meta holds request-scoped metadata present on every response.
 type Meta struct {
-	Timestamp string `json:"timestamp"`
-	RequestID string `json:"requestId,omitempty"`
-	Count     *int   `json:"count,omitempty"` // only set on list responses
+	Timestamp string    `json:"timestamp"`
+	RequestID string    `json:"requestId,omitempty"`
+	Count     *int      `json:"count,omitempty"` // only set on list responses
+	Page      *PageMeta `json:"page,omitempty"`  // only set on paginated list responses
+}
+
+// PageMeta describes the page returned by a paginated list endpoint.
+type PageMeta struct {
+	Page     int  `json:"page"`
+	PageSize int  `json:"pageSize"`
+	HasMore  bool `json:"hasMore"`
 }
 
 // APIError carries machine-readable error information.
@@ -90,6 +101,20 @@ func OKList(c echo.Context, data interface{}, count int) error {
 	})
 }
 
+// OKPage sends HTTP 200 with a paginated list payload. page is written into
+// meta so callers know whether/how to request the next page without
+// inspecting the array.
+func OKPage(c echo.Context, data interface{}, count int, page PageMeta) error {
+	m := metaWithCount(c, count)
+	m.Page = &page
+	return c.JSON(http.StatusOK, Response{
+		Success: true,
+		Data:    data,
+		Error:   nil,
+		Meta:    m,
+	})
+}
+
 // Created sends HTTP 201 with the created resource.
 func Created(c echo.Context, data interface{}) error {
 	return c.JSON(http.StatusCreated, Response{
@@ -129,4 +154,14 @@ func ServiceUnavailable(c echo.Context, code, message string) error {
 // InternalError sends HTTP 500.
 func InternalError(c echo.Context, message string) error {
 	return errResp(c, http.StatusInternalServerError, CodeInternalError, message)
+}
+
+// BadGateway sends HTTP 502 (e.g. a provider returned an unparseable response).
+func BadGateway(c echo.Context, code, message string) error {
+	return errResp(c, http.StatusBadGateway, code, message)
+}
+
+// GatewayTimeout sends HTTP 504 (e.g. every provider timed out).
+func GatewayTimeout(c echo.Context, code, message string) error {
+	return errResp(c, http.StatusGatewayTimeout, code, message)
 }

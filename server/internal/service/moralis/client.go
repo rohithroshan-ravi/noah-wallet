@@ -3,6 +3,7 @@ package moralis
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,18 +16,20 @@ import (
 	"github.com/rohithroshan-ravi/noah-wallet/server/internal/provider"
 )
 
-const baseURL = "https://deep-index.moralis.io/api/v2.2"
+const defaultBaseURL = "https://deep-index.moralis.io/api/v2.2"
 
-// Client implements domain.MoralisService.
+// Client implements provider.BlockchainProvider.
 type Client struct {
 	apiKey     string
+	baseURL    string
 	httpClient *http.Client
 }
 
 // New creates a Moralis API client.
 func New(apiKey string) *Client {
 	return &Client{
-		apiKey: apiKey,
+		apiKey:  apiKey,
+		baseURL: defaultBaseURL,
 		httpClient: &http.Client{
 			Timeout: 15 * time.Second,
 		},
@@ -38,7 +41,11 @@ func (c *Client) Name() string { return "moralis" }
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 func (c *Client) get(ctx context.Context, path string, query url.Values, out interface{}) error {
-	u := baseURL + path
+	if c.apiKey == "" {
+		return provider.ErrMissingAPIKey
+	}
+
+	u := c.baseURL + path
 	if len(query) > 0 {
 		u += "?" + query.Encode()
 	}
@@ -51,6 +58,9 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, out int
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			return fmt.Errorf("moralis: %w", provider.ErrTimeout)
+		}
 		return fmt.Errorf("moralis: request failed: %w", err)
 	}
 	defer resp.Body.Close()
@@ -59,13 +69,29 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, out int
 	if err != nil {
 		return fmt.Errorf("moralis: read body: %w", err)
 	}
-	if resp.StatusCode == http.StatusTooManyRequests {
+
+	switch {
+	case resp.StatusCode == http.StatusTooManyRequests:
 		return fmt.Errorf("moralis: %w", provider.ErrRateLimit)
+	case resp.StatusCode == http.StatusUnauthorized, resp.StatusCode == http.StatusForbidden:
+		return fmt.Errorf("moralis: %w", provider.ErrAuthFailed)
+	case resp.StatusCode >= 500:
+		return fmt.Errorf("moralis: %w (status %d)", provider.ErrUnavailable, resp.StatusCode)
+	case resp.StatusCode >= 400:
+		return fmt.Errorf("moralis: status %d: %s", resp.StatusCode, truncate(body, 200))
 	}
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("moralis: status %d: %s", resp.StatusCode, body)
+
+	if err := json.Unmarshal(body, out); err != nil {
+		return fmt.Errorf("moralis: %w: %v", provider.ErrInvalidResponse, err)
 	}
-	return json.Unmarshal(body, out)
+	return nil
+}
+
+func truncate(b []byte, n int) string {
+	if len(b) <= n {
+		return string(b)
+	}
+	return string(b[:n]) + "…"
 }
 
 // ── Asset Holdings ────────────────────────────────────────────────────────────
@@ -185,8 +211,18 @@ func (c *Client) GetWalletHistory(ctx context.Context, address, chain string) ([
 	return out, nil
 }
 
-func (c *Client) GetTransactions(ctx context.Context, address, chain string) ([]domain.Transaction, error) {
+// GetTransactions returns one page of transactions.
+//
+// Moralis paginates this endpoint with an opaque cursor, not a page number,
+// so PageInfo.Page in the response is always reported as 0 — a caller-chosen
+// page.Page greater than 0 cannot be honored through this adapter (the
+// interface has no way to carry Moralis's cursor back to a later call).
+// PageInfo.HasMore still reflects whether Moralis returned a next cursor, so
+// list truncation is never silent even though deep paging isn't supported.
+func (c *Client) GetTransactions(ctx context.Context, address, chain string, page domain.Pagination) (domain.TransactionPage, error) {
+	page = page.Normalize(25, 100)
 	var raw struct {
+		Cursor string `json:"cursor"`
 		Result []struct {
 			Hash           string `json:"hash"`
 			FromAddress    string `json:"from_address"`
@@ -199,9 +235,9 @@ func (c *Client) GetTransactions(ctx context.Context, address, chain string) ([]
 			TransactionFee string `json:"transaction_fee"`
 		} `json:"result"`
 	}
-	q := url.Values{"chain": {chain}, "limit": {"100"}}
+	q := url.Values{"chain": {chain}, "limit": {strconv.Itoa(page.PageSize)}}
 	if err := c.get(ctx, "/"+address, q, &raw); err != nil {
-		return nil, err
+		return domain.TransactionPage{}, err
 	}
 	out := make([]domain.Transaction, len(raw.Result))
 	for i, r := range raw.Result {
@@ -217,7 +253,54 @@ func (c *Client) GetTransactions(ctx context.Context, address, chain string) ([]
 			TransactionFee: r.TransactionFee,
 		}
 	}
-	return out, nil
+	return domain.TransactionPage{
+		Items: out,
+		Page:  domain.PageInfo{Page: 0, PageSize: page.PageSize, HasMore: raw.Cursor != ""},
+	}, nil
+}
+
+// GetTokenTransfers returns one page of ERC-20 transfer events. See
+// GetTransactions for the same cursor-vs-page-number caveat.
+func (c *Client) GetTokenTransfers(ctx context.Context, address, chain string, page domain.Pagination) (domain.TokenTransferPage, error) {
+	page = page.Normalize(25, 100)
+	var raw struct {
+		Cursor string `json:"cursor"`
+		Result []struct {
+			TransactionHash string `json:"transaction_hash"`
+			Address         string `json:"address"`
+			FromAddress     string `json:"from_address"`
+			ToAddress       string `json:"to_address"`
+			Value           string `json:"value"`
+			BlockTimestamp  string `json:"block_timestamp"`
+			BlockNumber     string `json:"block_number"`
+			TokenName       string `json:"token_name"`
+			TokenSymbol     string `json:"token_symbol"`
+			TokenDecimals   string `json:"token_decimals"`
+		} `json:"result"`
+	}
+	q := url.Values{"chain": {chain}, "limit": {strconv.Itoa(page.PageSize)}}
+	if err := c.get(ctx, "/"+address+"/erc20/transfers", q, &raw); err != nil {
+		return domain.TokenTransferPage{}, err
+	}
+	out := make([]domain.TokenTransfer, len(raw.Result))
+	for i, r := range raw.Result {
+		out[i] = domain.TokenTransfer{
+			TxHash:          r.TransactionHash,
+			FromAddress:     r.FromAddress,
+			ToAddress:       r.ToAddress,
+			ContractAddress: r.Address,
+			TokenName:       r.TokenName,
+			TokenSymbol:     r.TokenSymbol,
+			Decimals:        r.TokenDecimals,
+			Value:           r.Value,
+			BlockTimestamp:  r.BlockTimestamp,
+			BlockNumber:     r.BlockNumber,
+		}
+	}
+	return domain.TokenTransferPage{
+		Items: out,
+		Page:  domain.PageInfo{Page: 0, PageSize: page.PageSize, HasMore: raw.Cursor != ""},
+	}, nil
 }
 
 // ── DeFi Positions ────────────────────────────────────────────────────────────

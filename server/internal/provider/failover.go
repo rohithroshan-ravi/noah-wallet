@@ -57,16 +57,23 @@ func (f *Failover) active() []BlockchainProvider {
 	return out
 }
 
-func (f *Failover) cool(name string) {
+func (f *Failover) cool(name string, cause error) {
 	f.mu.Lock()
 	f.limited[name] = time.Now().Add(cooldown)
 	f.mu.Unlock()
-	log.Printf("[provider/failover] %s rate-limited — cooling down for %s", name, cooldown)
+	log.Printf("[provider/failover] %s failed (%v) — cooling down for %s", name, cause, cooldown)
 }
 
 // run calls op against each active provider in order.
-// It advances to the next provider only on ErrRateLimit (marking the provider
-// as cooling) or ErrNotSupported. Any other error is returned immediately.
+//
+// It advances to the next provider on any error that indicates *this*
+// provider — not the request — is the problem: rate limiting, an
+// unimplemented method, a missing/invalid API key, an upstream outage, or a
+// timeout talking to it. Those provider-side errors cool the provider down
+// (except ErrNotSupported/ErrMissingAPIKey, which are permanent for this
+// provider until redeployed, so there's nothing to "cool"). Any other error
+// (e.g. a malformed response the caller should know about) is returned
+// immediately without trying further providers.
 func run[T any](f *Failover, op func(BlockchainProvider) (T, error)) (T, error) {
 	var zero T
 	var lastErr error
@@ -75,12 +82,12 @@ func run[T any](f *Failover, op func(BlockchainProvider) (T, error)) (T, error) 
 		if err == nil {
 			return v, nil
 		}
-		if errors.Is(err, ErrRateLimit) {
-			f.cool(p.Name())
+		switch {
+		case errors.Is(err, ErrRateLimit), errors.Is(err, ErrAuthFailed), errors.Is(err, ErrUnavailable), errors.Is(err, ErrTimeout):
+			f.cool(p.Name(), err)
 			lastErr = err
 			continue
-		}
-		if errors.Is(err, ErrNotSupported) {
+		case errors.Is(err, ErrNotSupported), errors.Is(err, ErrMissingAPIKey):
 			lastErr = err
 			continue
 		}
@@ -113,9 +120,15 @@ func (f *Failover) GetWalletHistory(ctx context.Context, address, chain string) 
 	})
 }
 
-func (f *Failover) GetTransactions(ctx context.Context, address, chain string) ([]domain.Transaction, error) {
-	return run(f, func(p BlockchainProvider) ([]domain.Transaction, error) {
-		return p.GetTransactions(ctx, address, chain)
+func (f *Failover) GetTransactions(ctx context.Context, address, chain string, page domain.Pagination) (domain.TransactionPage, error) {
+	return run(f, func(p BlockchainProvider) (domain.TransactionPage, error) {
+		return p.GetTransactions(ctx, address, chain, page)
+	})
+}
+
+func (f *Failover) GetTokenTransfers(ctx context.Context, address, chain string, page domain.Pagination) (domain.TokenTransferPage, error) {
+	return run(f, func(p BlockchainProvider) (domain.TokenTransferPage, error) {
+		return p.GetTokenTransfers(ctx, address, chain, page)
 	})
 }
 
