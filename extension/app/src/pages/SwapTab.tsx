@@ -221,7 +221,7 @@ export function SwapTab({ onBack }: Props) {
     .slice(0, 60);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0d0d0d] relative">
+    <div className="panel-shell relative">
 
       {/* ── Picker overlay ── */}
       {picker && (

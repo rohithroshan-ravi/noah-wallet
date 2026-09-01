@@ -1,16 +1,19 @@
+import { Rocket } from './icons';
+
 export function Hero() {
   return (
-    <section className="max-w-7xl mx-auto px-6 py-24 text-center">
-      <div className="mb-6 inline-block px-4 py-2 bg-[#1c1c1c] border border-[#2a2a2a] rounded-full">
-        <span className="text-sm text-[#c8ff00]">🚀 The Future of Web3</span>
+    <section className="section text-center">
+      <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 card rounded-full">
+        <Rocket size={16} className="text-[#c8ff00]" />
+        <span className="text-sm text-[#c8ff00]">The Future of Web3</span>
       </div>
-      
+
       <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
         Your Gateway to <span className="gradient-text">Web3</span>
       </h1>
-      
+
       <p className="text-xl text-[#888] max-w-2xl mx-auto mb-12">
-        Noah Wallet is a secure, user-friendly crypto wallet designed for everyone. 
+        Noah Wallet is a secure, user-friendly crypto wallet designed for everyone.
         Manage your digital assets, swap tokens, and explore the decentralized web with confidence.
       </p>
 
@@ -24,7 +27,7 @@ export function Hero() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-8 mt-16 pt-16 border-t border-[#2a2a2a]">
+      <div className="grid grid-cols-3 gap-8 mt-16 pt-16 section-divider">
         <div>
           <div className="text-3xl font-bold text-[#c8ff00]">100%</div>
           <div className="text-sm text-[#888] mt-2">Open Source</div>

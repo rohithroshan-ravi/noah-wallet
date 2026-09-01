@@ -12,7 +12,7 @@ export function ReceivePage({ onBack }: Props) {
   const copy = () => navigator.clipboard.writeText(account);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0d0d0d] px-5 pt-5">
+    <div className="panel-shell px-5 pt-5">
       <button className="mb-6 self-start" onClick={onBack}>
         <ArrowLeft />
       </button>

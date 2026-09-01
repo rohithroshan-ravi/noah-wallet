@@ -1,3 +1,5 @@
+import { TokenBNB, TokenBTC, TokenSOL, TokenUSDT } from "../components/Icons";
+
 type Props = {
   onGetStarted: () => void;
   onUseExisting: () => void;
@@ -5,22 +7,22 @@ type Props = {
 
 export function WelcomePage({ onGetStarted, onUseExisting }: Props) {
   return (
-    <div className="flex min-h-screen flex-col bg-[#0d0d0d]">
+    <div className="panel-shell">
       {/* Hero */}
       <div className="flex flex-1 flex-col items-center justify-center px-8 pb-12 pt-16 text-center">
         {/* Token icons cluster */}
         <div className="relative mb-10 h-36 w-36">
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-16 w-16 rounded-full bg-[#1c1c1c] border border-[#2a2a2a] flex items-center justify-center text-3xl">
-            ₿
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-16 w-16 rounded-full border border-[#2a2a2a] overflow-hidden">
+            <TokenBTC size={64} />
           </div>
-          <div className="absolute top-0 right-0 h-11 w-11 rounded-full bg-[#1c1c1c] border border-[#2a2a2a] flex items-center justify-center text-xl">
-            <span style={{ color: "#26A17B" }}>₮</span>
+          <div className="absolute top-0 right-0 h-11 w-11 rounded-full border border-[#2a2a2a] overflow-hidden">
+            <TokenUSDT size={44} />
           </div>
-          <div className="absolute bottom-0 left-2 h-10 w-10 rounded-full bg-[#1c1c1c] border border-[#2a2a2a] flex items-center justify-center text-lg">
-            <span style={{ color: "#9945FF" }}>◎</span>
+          <div className="absolute bottom-0 left-2 h-10 w-10 rounded-full border border-[#2a2a2a] overflow-hidden">
+            <TokenSOL size={40} />
           </div>
-          <div className="absolute top-4 left-0 h-9 w-9 rounded-full bg-[#1c1c1c] border border-[#2a2a2a] flex items-center justify-center text-base">
-            <span style={{ color: "#F0B90B" }}>⬡</span>
+          <div className="absolute top-4 left-0 h-9 w-9 rounded-full border border-[#2a2a2a] overflow-hidden">
+            <TokenBNB size={36} />
           </div>
         </div>
 

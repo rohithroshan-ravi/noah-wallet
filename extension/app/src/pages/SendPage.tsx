@@ -38,7 +38,7 @@ export function SendPage({ onBack }: Props) {
 
   if (txHash) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0d0d0d] px-6 text-center">
+      <div className="panel-shell items-center justify-center px-6 text-center">
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#c8ff0020]">
           <span className="text-3xl text-[#c8ff00]">✓</span>
         </div>
@@ -50,7 +50,7 @@ export function SendPage({ onBack }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0d0d0d] px-5 pt-5">
+    <div className="panel-shell px-5 pt-5">
       <button className="mb-6 self-start" onClick={onBack}>
         <ArrowLeft />
       </button>
@@ -61,7 +61,7 @@ export function SendPage({ onBack }: Props) {
         {/* Network switcher */}
         <div className="relative">
           <button
-            className="flex items-center gap-1.5 rounded-full border border-[#2a2a2a] bg-[#161616] px-3 py-1.5 text-xs font-semibold text-white hover:border-[#c8ff00] transition"
+            className="flex items-center gap-1.5 rounded-full border border-[#2a2a2a] bg-[#1c1c1c] px-3 py-1.5 text-xs font-semibold text-white hover:border-[#c8ff00] transition"
             onClick={() => setNetworkOpen((o) => !o)}
           >
             {currentNetwork?.chainName ?? `Chain ${chainId}`}

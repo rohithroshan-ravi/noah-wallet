@@ -1,6 +1,6 @@
 export function Footer() {
   return (
-    <footer className="border-t border-[#2a2a2a] py-12 mt-24">
+    <footer className="section-divider py-12 mt-24">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-8 mb-12">
           <div>
@@ -41,7 +41,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-[#2a2a2a] pt-8 text-center text-sm text-[#555]">
+        <div className="section-divider pt-8 text-center text-sm text-[#555]">
           <p>&copy; 2026 Noah Wallet. All rights reserved.</p>
         </div>
       </div>

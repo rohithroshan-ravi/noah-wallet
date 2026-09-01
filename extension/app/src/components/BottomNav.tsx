@@ -13,7 +13,8 @@ const TABS: { id: Tab; label: string; Icon: React.ComponentType<{ size?: number 
 
 export function BottomNav({ active, onChange }: Props) {
   return (
-    <nav className="flex h-16 border-t border-[#1c1c1c] bg-[#0d0d0d]">
+    // Border/background already come from the `.panel-footer` wrapper this renders inside.
+    <nav className="flex h-16">
       {TABS.map(({ id, label, Icon }) => (
         <button
           key={id}

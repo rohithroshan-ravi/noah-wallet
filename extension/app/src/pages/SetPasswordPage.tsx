@@ -33,7 +33,7 @@ export function SetPasswordPage({ mode, onBack, onDone }: Props) {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0d0d0d] px-6 pt-5">
+    <div className="panel-shell px-6 pt-5">
       <button className="mb-8 self-start" onClick={onBack}>
         <ArrowLeft />
       </button>
