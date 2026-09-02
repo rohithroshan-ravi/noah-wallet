@@ -2,14 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design tokens ────────────────────────────────────────────────────
+   Light palette is the default (`:root`). Dark overrides apply either
+   from the OS preference (`prefers-color-scheme`) or from an explicit
+   `data-theme="dark"` set by the toggle in <Navigation>, persisted to
+   localStorage by the inline script in app/layout.tsx. An explicit
+   `data-theme="light"` always wins over the OS preference.
+
+   `--accent` is the raw brand lime — only safe as a *background* under
+   black text (btn-primary) since it has poor contrast as foreground on
+   a light page. `--accent-text` is the contrast-adjusted variant used
+   wherever the brand color appears as text/border/icon directly on the
+   page background; it equals `--accent` in dark mode (unchanged look)
+   but is a darker olive in light mode so it stays legible on white. */
 :root {
+  --bg: #ffffff;
+  --surface: #f4f4f4;
+  --card: #fafafa;
+  --border: #e2e2e2;
+  --accent: #c8ff00;
+  --accent-dim: #9ecc00;
+  --accent-text: #6fa000;
+  --text-1: #0d0d0d;
+  --text-2: #5f5f5f;
+  --text-3: #8a8a8a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0d0d0d;
+    --surface: #141414;
+    --card: #1c1c1c;
+    --border: #2a2a2a;
+    --accent: #c8ff00;
+    --accent-dim: #9ecc00;
+    --accent-text: #c8ff00;
+    --text-1: #ffffff;
+    --text-2: #888888;
+    --text-3: #555555;
+  }
+}
+
+:root[data-theme='dark'] {
   --bg: #0d0d0d;
   --surface: #141414;
   --card: #1c1c1c;
   --border: #2a2a2a;
   --accent: #c8ff00;
+  --accent-dim: #9ecc00;
+  --accent-text: #c8ff00;
   --text-1: #ffffff;
   --text-2: #888888;
+  --text-3: #555555;
 }
 
 html, body {
@@ -17,6 +61,7 @@ html, body {
   color: var(--text-1);
   font-family: "Inter", ui-sans-serif, system-ui;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Smooth scrollbar */
@@ -35,19 +80,22 @@ html, body {
 
 /* Utility classes */
 .btn-primary {
-  @apply px-6 py-3 bg-[#c8ff00] text-black font-bold rounded-full hover:bg-[#9ecc00] transition active:scale-95;
+  @apply px-6 py-3 bg-[var(--accent)] text-black font-bold rounded-full hover:bg-[var(--accent-dim)] transition active:scale-95;
 }
 
 .btn-secondary {
-  @apply px-6 py-3 border border-[#c8ff00] text-[#c8ff00] font-bold rounded-full hover:bg-[#c8ff00]/10 transition;
+  @apply px-6 py-3 border border-[var(--accent-text)] text-[var(--accent-text)] font-bold rounded-full transition;
+}
+.btn-secondary:hover {
+  background: color-mix(in srgb, var(--accent-text) 12%, transparent);
 }
 
 .btn-ghost {
-  @apply px-6 py-3 text-[#888] hover:text-white transition;
+  @apply px-6 py-3 text-[var(--text-2)] hover:text-[var(--text-1)] transition;
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #c8ff00, #9ecc00);
+  background: linear-gradient(135deg, var(--accent-text), var(--accent-dim));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -55,15 +103,21 @@ html, body {
 
 /* Shared landing-page layout primitives, factored out of the repeated
    inline utility strings on every section (max-w-7xl container, top
-   divider, dark card). */
+   divider, themed card). */
 .section {
   @apply max-w-7xl mx-auto px-6 py-24;
 }
 
 .section-divider {
-  @apply border-t border-[#2a2a2a];
+  @apply border-t border-[var(--border)];
 }
 
 .card {
-  @apply bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl;
+  @apply bg-[var(--card)] border border-[var(--border)] rounded-2xl;
+}
+
+.icon-badge {
+  @apply flex h-10 w-10 items-center justify-center rounded-full;
+  background: color-mix(in srgb, var(--accent-text) 18%, transparent);
+  color: var(--accent-text);
 }

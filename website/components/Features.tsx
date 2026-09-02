@@ -38,7 +38,7 @@ export function Features() {
   return (
     <section id="features" className="section section-divider">
       <h2 className="text-4xl font-bold mb-4 text-center">Features</h2>
-      <p className="text-center text-[#888] mb-16 max-w-2xl mx-auto">
+      <p className="text-center text-[var(--text-2)] mb-16 max-w-2xl mx-auto">
         Everything you need for a seamless Web3 experience
       </p>
 
@@ -46,13 +46,13 @@ export function Features() {
         {FEATURES.map(({ title, description, Icon }) => (
           <div
             key={title}
-            className="p-6 card hover:border-[#c8ff00] transition"
+            className="p-6 card hover:border-[var(--accent-text)] transition"
           >
-            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#c8ff0020] text-[#c8ff00]">
+            <div className="mb-4 icon-badge">
               <Icon size={20} />
             </div>
             <h3 className="text-lg font-bold mb-2">{title}</h3>
-            <p className="text-sm text-[#888]">{description}</p>
+            <p className="text-sm text-[var(--text-2)]">{description}</p>
           </div>
         ))}
       </div>
